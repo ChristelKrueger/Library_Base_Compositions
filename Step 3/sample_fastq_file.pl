@@ -1,3 +1,5 @@
+#Credit to: s-andrews for their work on this script (https://github.com/s-andrews/SpeciesScan/blob/master/bin/sample_url)
+
 #!/usr/bin/perl
 use warnings;
 use strict;
