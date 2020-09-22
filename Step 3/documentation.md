@@ -18,3 +18,12 @@ GATTTGGGGTTCAAAGCAGTATCGATCAAATAGTAAATCCATTTGTTCAACTCACAGTTT
 
 <h1>Task:</h1>
 Take an URL pointing to a FASTQ file, then parse and randomly locate *n* number of reads, and store into a data structure of some sort. (Rest of the task is in step 4)
+
+<h3>Tips 'n tricks:</h3>
+
+* Look at this [perl script](https://github.com/s-andrews/SpeciesScan/blob/master/bin/sample_url) for help on parsing the FASTQ file.
+* This sort of command for UNIX-based systems will output the file as a stream, which your program can get as <i>stdin</i>:
+
+```
+wget -qO- url | zcat | your_program
+```
