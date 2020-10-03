@@ -39,14 +39,14 @@ my $debug = 0;
 
 my $valid_seqs = 0;
 
-while (<IN>) {
+while (<STDIN>) {
 
         $debug and sleep(1);
 
         $header = $_;
-        $seq = <IN>;
-        $mid = <IN>;
-        $quals = <IN>;
+        $seq = <STDIN>;
+        $mid = <STDIN>;
+        $quals = <STDIN>;
         unless ($quals) {
                 die "Ran out of data in the middle of a read\n";
         }
