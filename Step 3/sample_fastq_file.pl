@@ -25,10 +25,12 @@ my $trimmed_length = 50;
 my $target_read_count = 10000;
 
 # Gets command line arguments
-GetOptions('avg_phred_score=s' => \$average_phred_score) or die "USAGE: sample_fastq_file --avg_phred_score 25 --n_content 0 --trimmed_length 50 --target_read_count 1000\n";
-GetOptions('n_content=s' => \$n_content) or die "USAGE: sample_fastq_file --avg_phred_score 25 --n_content 0 --trimmed_length 50 --target_read_count 1000\n";
-GetOptions('trimmed_length=s' => \$trimmed_length) or die "USAGE: sample_fastq_file --avg_phred_score 25 --n_content 0 --trimmed_length 50 --target_read_count 1000";
-GetOptions('target_read_count=s' => \$target_read_count) or die "USAGE: sample_fastq_file --avg_phred_score 25 --n_content 0 --trimmed_length 50 --target_read_count 1000";
+GetOptions(
+        'avg_phred_score=s' => \$average_phred_score,
+        'n_content=s' => \$n_content,
+        'trimmed_length=s' => \$trimmed_length,
+        'target_read_count=s' => \$target_read_count
+) or die "USAGE: sample_fastq_file --avg_phred_score 25 --n_content 0 --trimmed_length 50 --target_read_count 1000\n";
 
 my $header;
 my $seq;
@@ -58,8 +60,8 @@ while (<STDIN>) {
 
         # Trim them if they're too long
         if (length($seq) > $trimmed_length) {
-                $seq = substr($seq,0,50);
-                $quals = substr($quals,0,50);
+                $seq = substr($seq,0,$trimmed_length);
+                $quals = substr($quals,0,$trimmed_length);
                 $debug and warn "Trimmed read length\n$header$seq\n$mid$quals\n\n";
         }
 
