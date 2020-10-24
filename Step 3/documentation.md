@@ -15,6 +15,3 @@ GATTTGGGGTTCAAAGCAGTATCGATCAAATAGTAAATCCATTTGTTCAACTCACAGTTT
 ```
 * [Wikipedia page for further reference.](https://en.wikipedia.org/wiki/FASTQ_format)
 * [Read for more detailed explanation on quality value encoding](https://en.wikipedia.org/wiki/FASTQ_format#Encoding)
-
-<h1>Task:</h1>
-Take an URL pointing to a FASTQ file, then parse and randomly locate *n* number of reads, and store into a data structure of some sort. (Rest of the task is in step 4)
