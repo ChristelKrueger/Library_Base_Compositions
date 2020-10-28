@@ -1,4 +1,4 @@
-<h1>Format</h1>
+<h1>FASTQ Format</h1>
 A FASTQ file normally uses four lines per sequence.
 
 * Line 1 begins with a '@' character and is followed by a sequence identifier and an optional description (like a FASTA title line).
@@ -15,3 +15,7 @@ GATTTGGGGTTCAAAGCAGTATCGATCAAATAGTAAATCCATTTGTTCAACTCACAGTTT
 ```
 * [Wikipedia page for further reference.](https://en.wikipedia.org/wiki/FASTQ_format)
 * [Read for more detailed explanation on quality value encoding](https://en.wikipedia.org/wiki/FASTQ_format#Encoding)
+
+<h1>Program Architecture </h1>
+The project is written in [Rust](https://www.rust-lang.org/)
+There are three files, two of which compile to binary executables while the third (_lib.rs_) is the library of modules which the other two files depend on.
