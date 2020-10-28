@@ -2,7 +2,6 @@ pub mod fastq_io {
     use std::path::PathBuf;
     use std::io::{self, BufRead, BufWriter, Write, BufReader, ErrorKind};
     use std::fs::OpenOptions;
-    use regex::Regex;
     use std::process;
 
     pub mod test_utils {
@@ -16,63 +15,9 @@ pub mod fastq_io {
         }
     }
 
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-        use super::test_utils::return_reader;
-
-        #[test]
-        fn test_check_colorspace() {
-            let mut read = FASTQRead::new(6);
-            let mut reader = return_reader(b"@\nAT1CGN\n+\n!!!!!!");
-            read.read(&mut reader);
-
-            assert!(read.check_colorspace())
-        }
-
-        #[test]
-        fn test_count_n() {
-            let mut read = FASTQRead::new(6);
-            let mut reader = return_reader(b"@\nNNANNA\n+\n!!!!!!");
-            read.read(&mut reader);
-
-            assert_eq!(read.count_n(), 4)
-        }
-
-        #[test]
-        fn test_get_average_quality() {
-            let mut read = FASTQRead::new(6);
-            let mut reader = return_reader(b"@\nNNANNA\n+\n!\"#{|}");
-            read.read(&mut reader);
-
-            assert_eq!(read.get_average_quality(), 46)
-        }
-    }
-
-    // Abstraction for a single read of FASTQ data
-    #[derive(Debug)]
-    pub struct FASTQRead {
-        pub header: String,
-        pub seq: String,
-        pub mid: String,
-        pub quals: String,
-        // Regex for checking if seq has colorspace
-        seq_colorspace_checker: Regex,
-    }
-
+    // impl read and write logic for FASTQRead struct
+    use crate::sample::FASTQRead;
     impl FASTQRead {
-        pub fn new (len: usize) -> FASTQRead {
-            FASTQRead {
-                header:  String::with_capacity(len),
-                seq: String::with_capacity(len),
-                mid: String::with_capacity(len),
-                quals: String::with_capacity(len),
-
-                seq_colorspace_checker: Regex::new(r"\d").unwrap()
-            }
-        }
-
-        // Reads FASTQ line from Reader
         pub fn read<R> (&mut self, reader: &mut R)
         where
             R: BufRead
@@ -98,29 +43,28 @@ pub mod fastq_io {
             if mid {write!(writer, "{}\n", self.mid).expect("Error writing to file/stdout.");}
             if quals {write!(writer, "{}\n", self.quals).expect("Error writing to file/stdout.");}
         }
+    }
 
-        pub fn trim(&mut self, len: usize) {
-            for s in [&mut self.seq, &mut self.quals].iter_mut() {
-                s.truncate(len);
+    use crate::base_extraction::Read;
+    impl Read {
+        pub fn read <R>(comp: &mut Vec<Read>, reader: &mut R) -> bool
+        where
+            R: BufRead
+        {
+            let mut s = String::with_capacity(comp.len());
+            if reader.read_line(&mut s).expect("Error reading line. Make sure terminal supports UTF-8 input") == 0 {
+                return false;
             }
-        }
+            s = s.trim().to_string();
 
-        pub fn count_n(&self) -> usize {
-            self.seq.matches("N").count()
-        }
-
-        // Returns true if number is found in seq
-        pub fn check_colorspace(&self) -> bool {
-            self.seq_colorspace_checker.is_match(&self.seq)
-        }
-
-        pub fn get_average_quality(&self) -> usize {
-            let mut qual_sum: usize = 0;
-            for char in self.quals.as_bytes() {
-                qual_sum += (*char as usize) - 33;
+            for i in comp.len()..s.len() {
+                comp.push(Read::new(i))
+            };
+            for c in s.as_bytes().iter().zip(0..s.len()) {
+                println!("Index {}, Ele {:?}", c.1, c.0);
+                comp[c.1].extract(c.0);
             }
-
-            qual_sum / self.quals.len()
+            true
         }
     }
 
@@ -184,14 +128,42 @@ pub mod sample {
             assert_eq!(std::str::from_utf8(&stringified).unwrap().to_string(),
             std::str::from_utf8(b"@\nAA\n+\n~~").unwrap());
         }
+
+        use super::*;
+        use super::test_utils::return_reader;
+
+        #[test]
+        fn test_check_colorspace() {
+            let mut read = FASTQRead::new(6);
+            let mut reader = return_reader(b"@\nAT1CGN\n+\n!!!!!!");
+            read.read(&mut reader);
+
+            assert!(read.check_colorspace())
+        }
+
+        #[test]
+        fn test_count_n() {
+            let mut read = FASTQRead::new(6);
+            let mut reader = return_reader(b"@\nNNANNA\n+\n!!!!!!");
+            read.read(&mut reader);
+
+            assert_eq!(read.count_n(), 4)
+        }
+
+        #[test]
+        fn test_get_average_quality() {
+            let mut read = FASTQRead::new(6);
+            let mut reader = return_reader(b"@\nNNANNA\n+\n!\"#{|}");
+            read.read(&mut reader);
+
+            assert_eq!(read.get_average_quality(), 46)
+        }
     }
 
     use log::{debug, info};
     use structopt::StructOpt;
     use std::path::PathBuf;
     use std::io::{BufRead, Write};
-    
-    use crate::fastq_io::FASTQRead;
 
     #[derive(Debug, StructOpt)]
     #[structopt(name = "sample fastq file", about = "Filters given FASTQ file according to given specifications.")]
@@ -241,6 +213,55 @@ pub mod sample {
         /// Trims each sampled read to given length.
         #[structopt(short = "t", long = "trim")]
         trimmed_length: Option<usize>,
+    }
+
+    use regex::Regex;
+    // Abstraction for a single read of FASTQ data
+    #[derive(Debug)]
+    pub struct FASTQRead {
+        pub header: String,
+        pub seq: String,
+        pub mid: String,
+        pub quals: String,
+        // Regex for checking if seq has colorspace
+        seq_colorspace_checker: Regex,
+    }
+
+    impl FASTQRead {
+        pub fn new (len: usize) -> FASTQRead {
+            FASTQRead {
+                header:  String::with_capacity(len),
+                seq: String::with_capacity(len),
+                mid: String::with_capacity(len),
+                quals: String::with_capacity(len),
+
+                seq_colorspace_checker: Regex::new(r"\d").unwrap()
+            }
+        }
+
+        pub fn trim(&mut self, len: usize) {
+            for s in [&mut self.seq, &mut self.quals].iter_mut() {
+                s.truncate(len);
+            }
+        }
+
+        pub fn count_n(&self) -> usize {
+            self.seq.matches("N").count()
+        }
+
+        // Returns true if number is found in seq
+        pub fn check_colorspace(&self) -> bool {
+            self.seq_colorspace_checker.is_match(&self.seq)
+        }
+
+        pub fn get_average_quality(&self) -> usize {
+            let mut qual_sum: usize = 0;
+            for char in self.quals.as_bytes() {
+                qual_sum += (*char as usize) - 33;
+            }
+
+            qual_sum / self.quals.len()
+        }
     }
 
     pub fn run<R, W>(mut reader: R, mut writer: W, args: Cli)
@@ -307,7 +328,7 @@ pub mod base_extraction {
         use super::*;
         #[test]
         fn test_extract() {
-            let mut read = Read {pos: 0, A: 0, T: 0, G: 0, C: 0, N: 0};
+            let mut read = Read::new(0);
             read.extract(&b'A');
             assert_eq!(read.A, 1);
 
@@ -324,17 +345,17 @@ pub mod base_extraction {
             assert_eq!(read.N, 1);
         }
 
-        use crate::{fastq_io, base_extraction};
+        use crate::fastq_io;
         #[test]
         fn test_base_extraction() {
             let reader = fastq_io::test_utils::return_reader(b"AT\nGC\nNN\n");
             let mut writer = fastq_io::test_utils::return_writer();
 
-            base_extraction::run(reader, &mut writer);
+            run(reader, &mut writer);
             let stringified = writer.get_ref()[0..].to_vec();
             assert_eq!(std::str::from_utf8(&stringified).unwrap().to_string(),
-            std::str::from_utf8(
-            br#"{"pos":0,"A":1,"T":0,"G":1,"C":0,"N":1}
+                std::str::from_utf8(
+                br#"{"pos":0,"A":1,"T":0,"G":1,"C":0,"N":1}
 {"pos":1,"A":0,"T":1,"G":0,"C":1,"N":1}
 "#).unwrap())
         }
@@ -362,7 +383,7 @@ pub mod base_extraction {
     // even if compositions arive out of order
     #[derive(Serialize, Deserialize, Clone)]
     #[allow(non_snake_case)]
-    struct Read {
+    pub struct Read {
         pos: usize,
         A: u32,
         T: u32,
@@ -372,13 +393,11 @@ pub mod base_extraction {
     }
 
     impl Read {
-        fn read(comp: &mut Vec<Read>, s: &str) {
-            for c in s.as_bytes().iter().zip(0..s.len()) {
-                comp[c.1].extract(c.0);
-            }
+        pub fn new (pos: usize) -> Read {
+            Read {pos: pos, A: 0, T: 0, G: 0, C: 0, N: 0}
         }
 
-        fn extract(&mut self, s: &u8) {
+        pub fn extract(&mut self, s: &u8) {
             match s {
                 b'A' => self.A += 1,
                 b'T' => self.T += 1,
@@ -399,33 +418,17 @@ pub mod base_extraction {
         R: BufRead,
         W: Write,
     {
-        use log::debug;
-
-        let mut s = String::new();
-        reader.read_line(&mut s).expect("Error reading line. Make sure text is formatted as valid UTF-8");
-        s = s.trim().to_string();
-        let len = s.len();
-
-        debug!("Read len: {:?}", len);
-        //let mut comp = Vec::<Read>::with_capacity(len);
-        let mut comp = vec![Read {pos: 0, A: 0, T: 0, G: 0, C: 0, N: 0}; len];
+        // Each ellement represents a column of the seqs
+        let mut comp: Vec<Read> = Vec::new();
  
-        for i in 0..len {
-            comp[i] = Read {pos: i, A: 0, T: 0, G: 0, C: 0, N: 0};
+        let len = comp.len();
+        for c in comp.iter_mut().zip(0..len) {
+            *c.0 = Read {pos: c.1, A: 0, T: 0, G: 0, C: 0, N: 0};
         }
 
-        loop {
-            s = s.trim().to_string();
-            debug!("Read: {:?}", s);
-            // Update each comp struct with corresponding column's char
-            Read::read(&mut comp, &s);
-
-            s.clear();
-            if reader.read_line(&mut s).expect("Error reading line. Make sure text is formatted as valid UTF-8") == 0 {
-                break;
-            };
-        }
-        for i in 0..len {
+        //Read seqs into Read arr
+        while Read::read(&mut comp, &mut reader){}
+        for i in 0..comp.len() {
             write!(writer, "{}\n", comp[i].stringify()).expect("Error writing to file/stdout");
         }
         writer.flush().expect("Error flushing stream");
