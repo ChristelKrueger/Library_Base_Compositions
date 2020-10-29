@@ -61,7 +61,6 @@ pub mod fastq_io {
                 comp.push(Read::new(i))
             };
             for c in s.as_bytes().iter().zip(0..s.len()) {
-                println!("Index {}, Ele {:?}", c.1, c.0);
                 comp[c.1].extract(c.0);
             }
             true
