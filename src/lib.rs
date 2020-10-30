@@ -392,12 +392,12 @@ pub mod base_extraction {
     #[derive(Serialize, Deserialize, Clone)]
     #[allow(non_snake_case)]
     pub struct Read {
-        pos: usize,
-        A: u32,
-        T: u32,
-        G: u32,
-        C: u32,
-        N: u32,
+        pub pos: usize,
+        pub A: u32,
+        pub T: u32,
+        pub G: u32,
+        pub C: u32,
+        pub N: u32,
     }
 
     impl Read {
@@ -438,10 +438,10 @@ pub mod base_extraction {
 
 pub mod plot_comp {
     use crate::base_extraction::Read;
-    use crate::fastq_io::get_reader;
     use serde_json::{self, Deserializer};
     use structopt::StructOpt;
     use std::path::PathBuf;
+    use plotters::prelude::*;
 
     #[derive(Debug, StructOpt)]
     #[structopt(name = "Plot base composition", about = "Plots base composition of given JSON file")]
@@ -456,14 +456,66 @@ pub mod plot_comp {
     }
 
     use std::io::BufRead;
-    pub fn run <R>(mut reader: R)
+    pub fn run <R>(reader: R) -> Result<(), Box<dyn std::error::Error>>
     where
         R: BufRead,
     {
-        let stream = Deserializer::from_reader(reader).into_iter::<Read>();
-        
-        for read in stream.into_iter() {
-            // Plot a point on various lines for A, G, T, C
-        }
+        let comp: Vec<Read> = Deserializer::from_reader(reader).into_iter::<Read>().map(|x| x.expect("Error converting JSON to data")).collect();
+
+        //Set up plotting logic
+        let root = BitMapBackend::new("out.png", (1024, 768)).into_drawing_area();
+        root.fill(&WHITE)?;
+        let root = root.margin(10, 10, 10, 10);
+        let mut chart = ChartBuilder::on(&root)
+            // Set the caption of the chart
+            .caption("Composition", ("sans-serif", 40).into_font())
+            // Set the size of the label region
+            .x_label_area_size(20)
+            .y_label_area_size(40)
+            // Finally attach a coordinate on the drawing area and make a chart context
+            .build_cartesian_2d(0u32..5u32, 0u32..5u32)?;
+
+        chart.configure_mesh().draw()?;
+
+        //Draw bases
+        chart
+            .draw_series(LineSeries::new(
+                comp.iter().map(|x| (x.pos as u32, x.A)),
+                &CYAN,
+            ))?
+            .label("Base A")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &CYAN));
+
+        chart
+            .draw_series(LineSeries::new(
+                comp.iter().map(|x| (x.pos as u32, x.T)),
+                &BLUE,
+            ))?
+            .label("Base T")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+        chart
+            .draw_series(LineSeries::new(
+                comp.iter().map(|x| (x.pos as u32, x.G)),
+                &GREEN,
+            ))?
+            .label("Base G")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &GREEN));
+        chart
+            .draw_series(LineSeries::new(
+                comp.iter().map(|x| (x.pos as u32, x.C)),
+                &YELLOW,
+            ))?
+            .label("Base C")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &YELLOW));
+
+        chart
+            .draw_series(LineSeries::new(
+                comp.iter().map(|x| (x.pos as u32, x.N)),
+                &RED,
+            ))?
+            .label("Unknown Base")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+
+        Ok(())
     }
 }
