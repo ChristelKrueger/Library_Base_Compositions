@@ -65,6 +65,17 @@ pub mod fastq_io {
             }
             true
         }
+
+        pub fn read_json <R> (reader: &mut R) -> Option<Read>
+        where 
+            R: BufRead
+        {
+            let mut s = String::new();
+            if reader.read_line(&mut s).expect("Error reading line. Make sure terminal supports UTF-8 input") == 0 {
+                return None;
+            }
+            Some(serde_json::from_str(&s).expect("Error converting from JSON to data"))
+        }
     }
 
     // Reader is a wrapper over BufRead
@@ -363,6 +374,7 @@ pub mod base_extraction {
     use structopt::StructOpt;
     use std::path::PathBuf;
     use serde::{Serialize, Deserialize};
+    use serde_json;
     use std::io::{BufRead, Write};
 
     #[derive(Debug, StructOpt)]
@@ -406,10 +418,6 @@ pub mod base_extraction {
                 _ => panic!("Invalid character {:?} == {:?} found in read", *s, s.to_ascii_lowercase())
             }            
         }
-
-        fn stringify(&self) -> String {
-            serde_json::to_string(&self).expect("Unable to convert data to JSON")
-        }
     }
     
     pub fn run<R, W>(mut reader: R, mut writer: W)
@@ -417,7 +425,7 @@ pub mod base_extraction {
         R: BufRead,
         W: Write,
     {
-        // Each ellement represents a column of the seqs
+        // Each element represents a column of the seqs
         let mut comp: Vec<Read> = Vec::new();
  
         let len = comp.len();
@@ -427,9 +435,39 @@ pub mod base_extraction {
 
         //Read seqs into Read arr
         while Read::read(&mut comp, &mut reader){}
-        for i in 0..comp.len() {
+        /*for i in 0..comp.len() {
             write!(writer, "{}\n", comp[i].stringify()).expect("Error writing to file/stdout");
         }
-        writer.flush().expect("Error flushing stream");
+        writer.flush().expect("Error flushing stream");*/
+        write!(writer, "{}", serde_json::to_string(&comp).unwrap()).unwrap();
+    }
+}
+
+pub mod draw {
+    use crate::base_extraction::Read;
+    use crate::fastq_io::get_reader;
+    use serde_json::{self, Deserializer};
+    use structopt::StructOpt;
+    use std::path::PathBuf;
+
+    #[derive(Debug, StructOpt)]
+    #[structopt(name = "Plot base composition", about = "Plots base composition of given JSON file")]
+    pub struct Cli {
+        #[structopt(short = "I", long = "stdin")]
+        /// Toggle stdin input
+        stdin: bool,
+
+        /// Input FASTQ file name
+        #[structopt(parse(from_os_str), required_unless("stdin"))]
+        pub input: Option<PathBuf>,
+    }
+
+    fn run(args: Cli) {
+        let mut reader = get_reader(&args.input);
+        let stream = Deserializer::from_reader(reader).into_iter::<Read>();
+        
+        for read in stream.into_iter() {
+            // Plot a point on various lines for A, G, T, C
+        }
     }
 }
