@@ -438,7 +438,7 @@ pub mod base_extraction {
 
 pub mod plot_comp {
     use crate::base_extraction::Read;
-    use serde_json::{self, Deserializer};
+    use serde_json;
     use structopt::StructOpt;
     use std::path::PathBuf;
     use plotters::prelude::*;
@@ -456,11 +456,14 @@ pub mod plot_comp {
     }
 
     use std::io::BufRead;
-    pub fn run <R>(reader: R) -> Result<(), Box<dyn std::error::Error>>
+    pub fn run <R>(mut reader: R) -> Result<(), Box<dyn std::error::Error>>
     where
         R: BufRead,
     {
-        let comp: Vec<Read> = Deserializer::from_reader(reader).into_iter::<Read>().map(|x| x.expect("Error converting JSON to data")).collect();
+        let mut s = String::new();
+        reader.read_line(&mut s).expect("Error reading line");
+
+        let comp: Vec<Read> = serde_json::from_str(&s).expect("Error converting JSON to data");
 
         //Set up plotting logic
         let root = BitMapBackend::new("out.png", (1024, 768)).into_drawing_area();
@@ -473,7 +476,7 @@ pub mod plot_comp {
             .x_label_area_size(20)
             .y_label_area_size(40)
             // Finally attach a coordinate on the drawing area and make a chart context
-            .build_cartesian_2d(0u32..5u32, 0u32..5u32)?;
+            .build_cartesian_2d(0u32..50u32, 0u32..100_000u32)?;
 
         chart.configure_mesh().draw()?;
 
