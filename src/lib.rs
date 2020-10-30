@@ -439,7 +439,7 @@ pub mod base_extraction {
     }
 }
 
-pub mod draw {
+pub mod plot_comp {
     use crate::base_extraction::Read;
     use crate::fastq_io::get_reader;
     use serde_json::{self, Deserializer};
@@ -458,8 +458,11 @@ pub mod draw {
         pub input: Option<PathBuf>,
     }
 
-    fn run(args: Cli) {
-        let mut reader = get_reader(&args.input);
+    use std::io::BufRead;
+    pub fn run <R>(mut reader: R)
+    where
+        R: BufRead,
+    {
         let stream = Deserializer::from_reader(reader).into_iter::<Read>();
         
         for read in stream.into_iter() {
