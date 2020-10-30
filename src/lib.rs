@@ -435,10 +435,6 @@ pub mod base_extraction {
 
         //Read seqs into Read arr
         while Read::read(&mut comp, &mut reader){}
-        /*for i in 0..comp.len() {
-            write!(writer, "{}\n", comp[i].stringify()).expect("Error writing to file/stdout");
-        }
-        writer.flush().expect("Error flushing stream");*/
         write!(writer, "{}", serde_json::to_string(&comp).unwrap()).unwrap();
     }
 }
