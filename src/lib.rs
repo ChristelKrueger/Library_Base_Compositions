@@ -364,10 +364,7 @@ pub mod base_extraction {
             run(reader, &mut writer);
             let stringified = writer.get_ref()[0..].to_vec();
             assert_eq!(std::str::from_utf8(&stringified).unwrap().to_string(),
-                std::str::from_utf8(
-                br#"{"pos":0,"A":1,"T":0,"G":1,"C":0,"N":1}
-{"pos":1,"A":0,"T":1,"G":0,"C":1,"N":1}
-"#).unwrap())
+                std::str::from_utf8(br#"[{"pos":0,"A":1,"T":0,"G":1,"C":0,"N":1},{"pos":1,"A":0,"T":1,"G":0,"C":1,"N":1}]"#).unwrap())
         }
     }
 
