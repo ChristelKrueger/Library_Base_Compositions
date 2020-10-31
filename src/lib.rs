@@ -468,17 +468,21 @@ pub mod plot_comp {
         //Set up plotting logic
         let root = BitMapBackend::new("out.png", (1024, 768)).into_drawing_area();
         root.fill(&WHITE)?;
-        let root = root.margin(10, 10, 10, 10);
         let mut chart = ChartBuilder::on(&root)
             // Set the caption of the chart
             .caption("Composition", ("sans-serif", 40).into_font())
             // Set the size of the label region
-            .x_label_area_size(20)
-            .y_label_area_size(40)
+            .x_label_area_size(30)
+            .y_label_area_size(30)
+            .margin(30)
             // Finally attach a coordinate on the drawing area and make a chart context
             .build_cartesian_2d(0u32..50u32, 0u32..100_000u32)?;
 
-        chart.configure_mesh().draw()?;
+        chart.configure_mesh()
+            .x_desc("Base number")
+            .y_desc("Occurences")
+            .axis_desc_style(("sans-serif", 15))
+            .draw()?;
 
         //Draw bases
         chart
@@ -518,6 +522,12 @@ pub mod plot_comp {
             ))?
             .label("Unknown Base")
             .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+
+        chart
+            .configure_series_labels()
+            .background_style(&WHITE.mix(0.8))
+            .border_style(&BLACK)
+            .draw()?;
 
         Ok(())
     }
