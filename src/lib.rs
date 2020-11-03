@@ -63,6 +63,9 @@ pub mod fastq_io {
             for c in s.as_bytes().iter().zip(0..s.len()) {
                 comp[c.1].extract(c.0);
             }
+            for i in comp {
+                i.calc_percentage();
+            }
             true
         }
 
@@ -415,6 +418,15 @@ pub mod base_extraction {
                 _ => panic!("Invalid character {:?} == {:?} found in read", *s, s.to_ascii_lowercase())
             }            
         }
+
+        pub fn calc_percentage(&mut self) {
+            let sum = self.A + self.T + self.G + self.C + self.N;
+            self.A = ((self.A / sum) as f32 * 100.0).round() as u32;
+            self.T = ((self.T / sum) as f32 * 100.0).round() as u32;
+            self.G = ((self.G / sum) as f32 * 100.0).round() as u32;
+            self.C = ((self.C / sum) as f32 * 100.0).round() as u32;
+            self.N = ((self.N / sum) as f32 * 100.0).round() as u32;
+        }
     }
     
     pub fn run<R, W>(mut reader: R, mut writer: W)
@@ -476,7 +488,7 @@ pub mod plot_comp {
             .y_label_area_size(30)
             .margin(30)
             // Finally attach a coordinate on the drawing area and make a chart context
-            .build_cartesian_2d(0u32..50u32, 0u32..100_000u32)?;
+            .build_cartesian_2d(0u32..100u32, 0u32..100u32)?;
 
         chart.configure_mesh()
             .x_desc("Base number")
