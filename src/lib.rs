@@ -484,51 +484,45 @@ pub mod plot_comp {
             .axis_desc_style(("sans-serif", 15))
             .draw()?;
 
+/*mismatched types
+
+expected a tuple with 2 elements, found one with 3 elements
+
+note: expected tuple `(&'static plotters::style::RGBColor, &'static str)`
+         found tuple `(&'static plotters::style::RGBColor, &'static str, [closure@src\lib.rs:489:46: 489:60])` */
+        const COLOR_ARR: [(&RGBColor, &str); 5] = [
+            (&RGBColor(255, 0, 0), "Base A"),
+            (&RGBColor(0, 255, 0), "Base T"),
+            (&RGBColor(0, 0, 255), "Base G"),
+            (&RGBColor(255, 255, 0), "Base C"),
+            (&RGBColor(0, 255, 255), "Unknown Base"),
+        ];
+
+        let read_arr = [
+            |r: &Read| r.A,
+            |r: &Read| r.T,
+            |r: &Read| r.G,
+            |r: &Read| r.C,
+            |r: &Read| r.N
+        ];
+        
         //Draw bases
-        chart
-            .draw_series(LineSeries::new(
-                comp.iter().map(|x| (x.pos as u32, x.A)),
-                &CYAN,
-            ))?
-            .label("Base A")
-            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &CYAN));
+        for i in (0..COLOR_ARR.len()).zip(0..read_arr.len()) {
+            chart
+                .draw_series(LineSeries::new(
+                    comp.iter().map(|r| (r.pos as u32, read_arr[i.1](r))),
+                    COLOR_ARR[i.0].0,
+                ))?
+                .label(COLOR_ARR[i.0].1)
+                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], COLOR_ARR[i.0].0));
+        }
 
-        chart
-            .draw_series(LineSeries::new(
-                comp.iter().map(|x| (x.pos as u32, x.T)),
-                &BLUE,
-            ))?
-            .label("Base T")
-            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
-        chart
-            .draw_series(LineSeries::new(
-                comp.iter().map(|x| (x.pos as u32, x.G)),
-                &GREEN,
-            ))?
-            .label("Base G")
-            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &GREEN));
-        chart
-            .draw_series(LineSeries::new(
-                comp.iter().map(|x| (x.pos as u32, x.C)),
-                &YELLOW,
-            ))?
-            .label("Base C")
-            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &YELLOW));
-
-        chart
-            .draw_series(LineSeries::new(
-                comp.iter().map(|x| (x.pos as u32, x.N)),
-                &RED,
-            ))?
-            .label("Unknown Base")
-            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
-
-        chart
+    /*    chart
             .configure_series_labels()
             .background_style(&WHITE.mix(0.8))
             .border_style(&BLACK)
             .draw()?;
-
+*/
         Ok(())
     }
 }
