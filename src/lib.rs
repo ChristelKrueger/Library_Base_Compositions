@@ -536,12 +536,12 @@ pub mod plot_comp {
                 .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], i.0.0));
         }
 
-    /*    chart
+        chart
             .configure_series_labels()
             .background_style(&WHITE.mix(0.8))
             .border_style(&BLACK)
             .draw()?;
-*/
+
         Ok(())
     }
 }
