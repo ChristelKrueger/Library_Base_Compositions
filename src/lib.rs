@@ -504,7 +504,7 @@ pub mod plot_comp {
                     i.0.0,
                 ))?
                 .label(i.0.1)
-                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], i.0.0));
+                .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], i.0.0));
         }
 
     /*    chart
