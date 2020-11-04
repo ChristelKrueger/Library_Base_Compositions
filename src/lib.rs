@@ -499,7 +499,7 @@ pub mod plot_comp {
         root.fill(&WHITE)?;
         let mut chart = ChartBuilder::on(&root)
             // Set the caption of the chart
-            .caption("Composition", ("sans-serif", 40).into_font())
+            .caption("Percentage", ("sans-serif", 40).into_font())
             // Set the size of the label region
             .x_label_area_size(30)
             .y_label_area_size(30)
@@ -515,11 +515,11 @@ pub mod plot_comp {
 
         //Draw bases
         for i in [
-            (&RGBColor(255, 0, 0), "Base A"),
-            (&RGBColor(0, 255, 0), "Base T"),
-            (&RGBColor(0, 0, 255), "Base G"),
-            (&RGBColor(255, 255, 0), "Base C"),
-            (&RGBColor(0, 255, 255), "Unknown Base"),
+            (&MAGENTA, "Base A"),
+            (&BLUE, "Base T"),
+            (&GREEN, "Base G"),
+            (&CYAN, "Base C"),
+            (&RED, "Unknown Base"),
         ].iter().zip([
             |r: &Read| r.A,
             |r: &Read| r.T,
