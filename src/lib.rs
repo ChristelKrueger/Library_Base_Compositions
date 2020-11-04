@@ -514,6 +514,7 @@ pub mod plot_comp {
             .draw()?;
 
         //Draw bases
+        //To customize colors, use ```&RGBColor(0, 0, 0)``` inplace of ```&MAGENTA```, etc.
         for i in [
             (&MAGENTA, "Base A"),
             (&BLUE, "Base T"),
