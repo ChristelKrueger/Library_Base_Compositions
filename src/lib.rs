@@ -63,9 +63,6 @@ pub mod fastq_io {
             for c in s.as_bytes().iter().zip(0..s.len()) {
                 comp[c.1].extract(c.0);
             }
-            for i in comp {
-                i.calc_percentage();
-            }
             true
         }
 
@@ -358,16 +355,22 @@ pub mod base_extraction {
             assert_eq!(read.N, 1);
         }
 
-        use crate::fastq_io;
         #[test]
-        fn test_base_extraction() {
-            let reader = fastq_io::test_utils::return_reader(b"AT\nGC\nNN\n");
+        fn test_percentage () {
+            assert_eq!(run_with_content(b"AA\nTA\nGA\nCA\nNA\n"),
+                std::str::from_utf8(br#"[{"pos":0,"A":20,"T":20,"G":20,"C":20,"N":20},{"pos":1,"A":100,"T":0,"G":0,"C":0,"N":0}]"#).unwrap())
+        }
+
+        use crate::fastq_io;
+   
+        fn run_with_content (content: &[u8]) -> String {
+            let reader = fastq_io::test_utils::return_reader(content);
             let mut writer = fastq_io::test_utils::return_writer();
 
             run(reader, &mut writer);
             let stringified = writer.get_ref()[0..].to_vec();
-            assert_eq!(std::str::from_utf8(&stringified).unwrap().to_string(),
-                std::str::from_utf8(br#"[{"pos":0,"A":1,"T":0,"G":1,"C":0,"N":1},{"pos":1,"A":0,"T":1,"G":0,"C":1,"N":1}]"#).unwrap())
+
+            std::str::from_utf8(&stringified).unwrap().to_string()
         }
     }
 
@@ -392,7 +395,7 @@ pub mod base_extraction {
     // Deriving Clone to allow easy initialization of Vec<Read>
     // pos included so multithreading will be easy since recieving program will be able to make sense of these
     // even if compositions arive out of order
-    #[derive(Serialize, Deserialize, Clone)]
+    #[derive(Serialize, Deserialize, Clone, Debug)]
     #[allow(non_snake_case)]
     pub struct Read {
         pub pos: usize,
@@ -420,12 +423,12 @@ pub mod base_extraction {
         }
 
         pub fn calc_percentage(&mut self) {
-            let sum = self.A + self.T + self.G + self.C + self.N;
-            self.A = ((self.A / sum) as f32 * 100.0).round() as u32;
-            self.T = ((self.T / sum) as f32 * 100.0).round() as u32;
-            self.G = ((self.G / sum) as f32 * 100.0).round() as u32;
-            self.C = ((self.C / sum) as f32 * 100.0).round() as u32;
-            self.N = ((self.N / sum) as f32 * 100.0).round() as u32;
+            let sum = (self.A + self.T + self.G + self.C + self.N) as f32;
+            self.A = ((self.A as f32 / sum) * 100.0).round() as u32;
+            self.T = ((self.T as f32 / sum) * 100.0).round() as u32;
+            self.G = ((self.G as f32 / sum) * 100.0).round() as u32;
+            self.C = ((self.C as f32 / sum) * 100.0).round() as u32;
+            self.N = ((self.N as f32 / sum) * 100.0).round() as u32;
         }
     }
     
@@ -444,6 +447,13 @@ pub mod base_extraction {
 
         //Read seqs into Read arr
         while Read::read(&mut comp, &mut reader){}
+        
+        //Convert raw numbers into %age and convert pos to start from 1
+        for c in comp.iter_mut() {
+            c.calc_percentage();
+            c.pos += 1;
+        }
+        write!(writer, "{}\n", serde_json::to_string(&comp.len()).unwrap()).unwrap();
         write!(writer, "{}", serde_json::to_string(&comp).unwrap()).unwrap();
     }
 }
@@ -475,6 +485,13 @@ pub mod plot_comp {
         let mut s = String::new();
         reader.read_line(&mut s).expect("Error reading line");
 
+        //Read x_len from first line
+        s = s.trim().to_string();
+        let x_len: usize = s.parse::<usize>().expect("Error reading max len, rerun extract-comp again");
+        s.clear();
+
+        //Read next line
+        reader.read_line(&mut s).expect("Error reading line");
         let comp: Vec<Read> = serde_json::from_str(&s).expect("Error converting JSON to data");
 
         //Set up plotting logic
@@ -488,7 +505,7 @@ pub mod plot_comp {
             .y_label_area_size(30)
             .margin(30)
             // Finally attach a coordinate on the drawing area and make a chart context
-            .build_cartesian_2d(0u32..100u32, 0u32..100u32)?;
+            .build_cartesian_2d(1u32..x_len as u32, 0u32..100u32)?;
 
         chart.configure_mesh()
             .x_desc("Base number")
