@@ -395,15 +395,15 @@ pub mod base_extraction {
     // Deriving Clone to allow easy initialization of Vec<Read>
     // pos included so multithreading will be easy since recieving program will be able to make sense of these
     // even if compositions arive out of order
-    #[derive(Serialize, Deserialize, Clone, Debug)]
+    #[derive(Serialize, Deserialize, Clone, Debug, Copy, PartialEq)]
     #[allow(non_snake_case)]
     pub struct Read {
         pub pos: usize,
-        pub A: u32,
-        pub T: u32,
-        pub G: u32,
-        pub C: u32,
-        pub N: u32,
+        pub A: usize,
+        pub T: usize,
+        pub G: usize,
+        pub C: usize,
+        pub N: usize,
     }
 
     impl Read {
@@ -422,13 +422,30 @@ pub mod base_extraction {
             }            
         }
 
+        // Useful for making calculations on all 5 fields
+        /// Returns all 5 bases as an array
+        pub fn as_arr (&self) -> [usize; 5] {
+            [self.A, self.T, self.G, self.C, self.N]
+        }
+
+        pub fn from_iter<I> (mut iter: I, pos: usize) -> Read
+        where
+            I: Iterator<Item = usize>,
+        {
+            let mut arr: [usize; 5] = [0; 5];
+            for a in arr.iter_mut() {
+                match iter.next() {
+                    Some(n) => *a = n,
+                    None => panic!("Improper iterator recieved, iterator is only supposed to return 5 elements for A, T, G, C, N respectively")
+                }
+            }
+
+            Read {A: arr[0], T: arr[1], G: arr[2], C: arr[3], N: arr[4], pos: pos}
+        }
+
         pub fn calc_percentage(&mut self) {
-            let sum = (self.A + self.T + self.G + self.C + self.N) as f32;
-            self.A = ((self.A as f32 / sum) * 100.0).round() as u32;
-            self.T = ((self.T as f32 / sum) * 100.0).round() as u32;
-            self.G = ((self.G as f32 / sum) * 100.0).round() as u32;
-            self.C = ((self.C as f32 / sum) * 100.0).round() as u32;
-            self.N = ((self.N as f32 / sum) * 100.0).round() as u32;
+            let sum = self.as_arr().iter().fold(0.0, |acc, curr| acc + (*curr as f32));
+            *self = Read::from_iter(self.as_arr().iter().map(|&x| ((x as f32 / sum) * 100.0).round() as usize), self.pos);
         }
     }
     
@@ -472,27 +489,111 @@ pub mod plot_comp {
         /// Toggle stdin input
         stdin: bool,
 
-        /// Input FASTQ file name
         #[structopt(parse(from_os_str), required_unless("stdin"))]
         pub input: Option<PathBuf>,
+        /// Other files of library for comparison
+        #[structopt(short = "l", parse(from_os_str))]
+        pub libs: Option<Vec<PathBuf>>,
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn test_calc_mean() {
+            assert_eq!(calc_mean(&vec![
+                vec![
+                    Read {pos: 0, A: 25, T: 0, G: 75, C: 0, N: 10},
+                ],
+                vec![
+                    Read {pos: 0, A: 75, T: 100, G: 100, C: 0, N: 10},
+            ]], 0, 2), 
+            Read {pos: 0, A: 50, T: 50, G: 87, C: 0, N: 10}
+            )
+        }
+
+        #[test]
+        fn test_calc_sd () {
+            assert_eq!(calc_sd(&vec![
+                vec![
+                    Read {pos: 0, A: 25, T: 0, G: 75, C: 0, N: 10},
+                ],
+                vec![
+                    Read {pos: 0, A: 75, T: 100, G: 100, C: 0, N: 10},
+            ]], Read {pos: 0, A: 50, T: 50, G: 87, C: 0, N: 10}, 0, 2), //This is mean of above values 
+            Read {pos: 0, A: 25, T: 50, G: 12, C: 0, N: 0}
+            )
+        }
     }
 
     use std::io::BufRead;
-    pub fn run <R>(mut reader: R) -> Result<(), Box<dyn std::error::Error>>
-    where
-        R: BufRead,
-    {
-        let mut s = String::new();
-        reader.read_line(&mut s).expect("Error reading line");
+    pub fn read_comp_file <R>(reader: &mut R) -> (usize, Vec<Read>)
+    where R: BufRead {
+        let mut s = String::with_capacity(500);
 
         //Read x_len from first line
+        reader.read_line(&mut s).expect("Error reading line");
         s = s.trim().to_string();
         let x_len: usize = s.parse::<usize>().expect("Error reading max len, rerun extract-comp again");
         s.clear();
 
-        //Read next line
+        //Read next line for JSON data
         reader.read_line(&mut s).expect("Error reading line");
-        let comp: Vec<Read> = serde_json::from_str(&s).expect("Error converting JSON to data");
+        let mut comp: Vec<Read> = serde_json::from_str(&s).expect("Error converting JSON to data");
+        comp.sort_by(|a, b| b.pos.cmp(&a.pos));
+
+        (x_len, comp)
+    }
+    
+    fn calc_mean (libs: &Vec<Vec<Read>>, pos: usize, max_len: usize) -> Read {
+        Read::from_iter(libs.iter()
+        .map(move |lib| lib[pos]) //Get reads at pos of lib
+        .fold(Read::new(pos), // Initial value: new read
+                              // Adds values from reads (produced by map |lib| libs[pos]) to accumulated Read
+                              // Then divides values of final accumulated read by x_len
+            |acc, curr| Read::from_iter(
+                acc.as_arr().iter() // Convert accumulated Read to its elements' iterator
+                .zip(curr.as_arr().iter()) // Zip with current Read's elements' iterator                            
+                .map(|x| x.0 + x.1) // Add their corresponding elements
+            , pos)) 
+        .as_arr().iter()
+        .map(|x| x / max_len), pos)
+    }
+
+    fn calc_sd (libs: &Vec<Vec<Read>>, mean: Read, pos: usize, max_len: usize) -> Read {
+        Read::from_iter(libs.iter()
+            .map(move |lib| lib[pos]) //Get reads at pos of lib
+            // Get differences from mean
+            .map(|read| Read::from_iter(
+                read.as_arr().iter() // Convert read to iterator over its elements
+                .zip(mean.as_arr().iter()) // Zip it with iterator over mean's elements
+                .inspect(|x| println!("Iterating over x tuple: {:?}", x))
+                .map(|x| (*x.0 as isize - *x.1 as isize).abs() as usize) // Get difference b/w mean and element
+                .map(|x| x * x), pos)) // Square difference
+            // Read::from_iter then converts it back into a Read
+            
+            // Get average of differences (squared)
+            .fold(Read::new(pos),
+                |acc, curr| Read::from_iter(
+                    acc.as_arr().iter() //Convert accumulated Read to its elements' iterator
+                    .zip(curr.as_arr().iter()) //Zip with current Read's elements' iterator
+                    .map(|x| x.0 + x.1) // Add the two numbers
+                , pos)) //Calculates sum
+            .as_arr().iter()
+            .map(|x| x / max_len) // Get average
+            .map(|x| (x as f64).sqrt() as usize) // Get square root of average
+        //Read::from_iter turns the iterators of elements back into a read
+
+        , pos)
+    }
+
+    use crate::fastq_io::get_reader;
+    pub fn run <R>(mut reader: R, libs: Option<Vec<PathBuf>>) -> Result<(), Box<dyn std::error::Error>>
+    where
+        R: BufRead,
+    {
+        let (x_len, comp) = read_comp_file(&mut reader);
 
         //Set up plotting logic
         let root = BitMapBackend::new("out.png", (1024, 768)).into_drawing_area();
@@ -505,7 +606,7 @@ pub mod plot_comp {
             .y_label_area_size(30)
             .margin(30)
             // Finally attach a coordinate on the drawing area and make a chart context
-            .build_cartesian_2d(1u32..x_len as u32, 0u32..100u32)?;
+            .build_cartesian_2d(1usize..x_len, 0usize..100usize)?;
 
         chart.configure_mesh()
             .x_desc("Base number")
@@ -530,11 +631,48 @@ pub mod plot_comp {
         ].iter()) {
             chart
                 .draw_series(LineSeries::new(
-                    comp.iter().map(|r| (r.pos as u32, i.1(r))),
+                    comp.iter().map(|r| (r.pos, i.1(r))),
                     i.0.0,
                 ))?
                 .label(i.0.1)
                 .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], i.0.0));
+        }
+
+        if let Some(libs) = libs {
+            let libs: Vec<Vec<Read>> = libs.iter()
+                .map(|x| get_reader(&Some(x.to_path_buf())))
+                .map(|mut x| read_comp_file(&mut x).1)
+                .collect();
+
+            let mut mean: Vec<Read> = Vec::with_capacity(x_len);
+            let mut sd: Vec<Read> = Vec::with_capacity(x_len);
+
+            for pos in 0..x_len {
+                mean[pos] = calc_mean(&libs, pos, x_len);
+                sd[pos] = calc_sd(&libs, mean[pos], pos, x_len);
+            }
+
+            for i in [
+                &MAGENTA,
+                &BLUE,
+                &GREEN,
+                &CYAN,
+                &RED,
+            ].iter().zip([
+                |r: &Read| r.A,
+                |r: &Read| r.T,
+                |r: &Read| r.G,
+                |r: &Read| r.C,
+                |r: &Read| r.N
+            ].iter()) {
+                chart
+                    .draw_series(std::iter::once(Polygon::new(
+                        (0..x_len).map(|x| (x, (i.1)(&mean[x]) - i.1(&sd[x]))).chain(
+                        (0..x_len).map(|x| (x, (i.1)(&mean[x]) + i.1(&sd[x]))))
+                        .collect::<Vec<(usize, usize)>>(),
+                        *i.0
+                    )))?;
+            }
         }
 
         chart
