@@ -358,7 +358,8 @@ pub mod base_extraction {
         #[test]
         fn test_percentage () {
             assert_eq!(run_with_content(b"AA\nTA\nGA\nCA\nNA\n"),
-                std::str::from_utf8(br#"[{"pos":0,"A":20,"T":20,"G":20,"C":20,"N":20},{"pos":1,"A":100,"T":0,"G":0,"C":0,"N":0}]"#).unwrap())
+                std::str::from_utf8(br#"2
+[{"pos":1,"A":20,"T":20,"G":20,"C":20,"N":20},{"pos":2,"A":100,"T":0,"G":0,"C":0,"N":0}]"#).unwrap())
         }
 
         use crate::fastq_io;
@@ -504,12 +505,12 @@ pub mod plot_comp {
         fn test_calc_mean() {
             assert_eq!(calc_mean(&vec![
                 vec![
-                    Read {pos: 0, A: 25, T: 0, G: 75, C: 0, N: 10},
+                    Read {pos: 1, A: 7, T: 8, G: 55, C: 27, N: 2},
                 ],
                 vec![
-                    Read {pos: 0, A: 75, T: 100, G: 100, C: 0, N: 10},
-            ]], 0, 2), 
-            Read {pos: 0, A: 50, T: 50, G: 87, C: 0, N: 10}
+                    Read {pos: 1, A: 7, T: 8, G: 53, C: 30, N: 2},
+            ]], 0), 
+            Read {pos: 1, A: 7, T: 8, G: 54, C: 28, N: 2}
             )
         }
 
@@ -521,7 +522,8 @@ pub mod plot_comp {
                 ],
                 vec![
                     Read {pos: 0, A: 75, T: 100, G: 100, C: 0, N: 10},
-            ]], Read {pos: 0, A: 50, T: 50, G: 87, C: 0, N: 10}, 0, 2), //This is mean of above values 
+            ]], Read {pos: 0, A: 50, T: 50, G: 87, C: 0, N: 10},
+             0), //This is mean of above values 
             Read {pos: 0, A: 25, T: 50, G: 12, C: 0, N: 0}
             )
         }
@@ -541,12 +543,12 @@ pub mod plot_comp {
         //Read next line for JSON data
         reader.read_line(&mut s).expect("Error reading line");
         let mut comp: Vec<Read> = serde_json::from_str(&s).expect("Error converting JSON to data");
-        comp.sort_by(|a, b| b.pos.cmp(&a.pos));
+        comp.sort_by(|a, b| a.pos.cmp(&b.pos));
 
         (x_len, comp)
     }
     
-    fn calc_mean (libs: &Vec<Vec<Read>>, pos: usize, max_len: usize) -> Read {
+    fn calc_mean (libs: &Vec<Vec<Read>>, pos: usize) -> Read {
         Read::from_iter(libs.iter()
         .map(move |lib| lib[pos]) //Get reads at pos of lib
         .fold(Read::new(pos), // Initial value: new read
@@ -558,10 +560,10 @@ pub mod plot_comp {
                 .map(|x| x.0 + x.1) // Add their corresponding elements
             , pos)) 
         .as_arr().iter()
-        .map(|x| x / max_len), pos)
+        .map(|x| x / libs.len()), pos + 1)
     }
 
-    fn calc_sd (libs: &Vec<Vec<Read>>, mean: Read, pos: usize, max_len: usize) -> Read {
+    fn calc_sd (libs: &Vec<Vec<Read>>, mean: Read, pos: usize) -> Read {
         Read::from_iter(libs.iter()
             .map(move |lib| lib[pos]) //Get reads at pos of lib
             // Get differences from mean
@@ -569,18 +571,18 @@ pub mod plot_comp {
                 read.as_arr().iter() // Convert read to iterator over its elements
                 .zip(mean.as_arr().iter()) // Zip it with iterator over mean's elements
                 .map(|x| (*x.0 as isize - *x.1 as isize).abs() as usize) // Get difference b/w mean and element
-                .map(|x| x * x), pos)) // Square difference
+                .map(|x| x * x), pos + 1)) // Square difference
             // Read::from_iter then converts it back into a Read
             
             // Get average of differences (squared)
-            .fold(Read::new(pos),
+            .fold(Read::new(pos + 1),
                 |acc, curr| Read::from_iter(
                     acc.as_arr().iter() //Convert accumulated Read to its elements' iterator
                     .zip(curr.as_arr().iter()) //Zip with current Read's elements' iterator
                     .map(|x| x.0 + x.1) // Add the two numbers
                 , pos)) //Calculates sum
             .as_arr().iter()
-            .map(|x| x / max_len) // Get average
+            .map(|x| x / libs.len()) // Get average
             .map(|x| (x as f64).sqrt() as usize) // Get square root of average
         //Read::from_iter turns the iterators of elements back into a read
 
@@ -646,9 +648,12 @@ pub mod plot_comp {
             let mut mean: Vec<Read> = Vec::with_capacity(x_len);
             let mut sd: Vec<Read> = Vec::with_capacity(x_len);
 
+            println!("x_len: {}", x_len);
             for pos in 0..x_len {
-                mean.push(calc_mean(&libs, pos, x_len));
-                sd.push(calc_sd(&libs, mean[pos], pos, x_len));
+                mean.push(calc_mean(&libs, pos));
+                sd.push(calc_sd(&libs, mean[pos], pos));
+                println!("Data was: {:?}, {:?}", libs[0][pos], libs[1][pos]);
+                println!("mean is: {:?}. sd is: {:?}", mean[pos], sd[pos]);
             }
 
             for i in [
@@ -666,10 +671,13 @@ pub mod plot_comp {
             ].iter()) {
                 chart
                     .draw_series(std::iter::once(Polygon::new(
-                        (0..x_len).map(|x| (x, (i.1)(&mean[x]) - i.1(&sd[x]))).chain(
-                        (0..x_len).map(|x| (x, (i.1)(&mean[x]) + i.1(&sd[x]))))
+                        (0..x_len)
+                            .map(|x| (x + 1, (i.1)(&mean[x]) as isize - (i.1)(&sd[x]) as isize))
+                            .map(|x| (x.0, if x.1 < 0 {0usize} else {x.1 as usize})) //Round off may cause -ve value, so replace them with 0
+                            .chain(
+                            (0..x_len).map(|x| (x + 1, (i.1)(&mean[x]) + (i.1)(&sd[x]))))
                         .collect::<Vec<(usize, usize)>>(),
-                        *i.0
+                        &i.0.mix(0.2)
                     )))?;
             }
         }
