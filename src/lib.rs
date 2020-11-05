@@ -503,13 +503,15 @@ pub mod plot_comp {
 
         #[test]
         fn test_calc_mean() {
-            assert_eq!(calc_mean(&vec![
+            assert_eq!(calc_mean(
+            &vec![
                 vec![
                     Read {pos: 1, A: 7, T: 8, G: 55, C: 27, N: 2},
                 ],
                 vec![
                     Read {pos: 1, A: 7, T: 8, G: 53, C: 30, N: 2},
-            ]], 0), 
+                ]
+            ], 0), 
             Read {pos: 1, A: 7, T: 8, G: 54, C: 28, N: 2}
             )
         }
