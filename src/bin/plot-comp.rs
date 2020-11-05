@@ -9,6 +9,6 @@ fn main() {
     SimpleLogger::new().init().unwrap();
 
     let args = Cli::from_args();
-    //Program starts.
-    run(fastq_io::get_reader(&args.input));
+
+    run(fastq_io::get_reader(&args.input), args.libs).expect("Error drawing chart");
 }
