@@ -647,9 +647,12 @@ pub mod plot_comp {
             let mut mean: Vec<Read> = Vec::with_capacity(x_len);
             let mut sd: Vec<Read> = Vec::with_capacity(x_len);
 
+            println!("x_len: {}", x_len);
             for pos in 0..x_len {
-                mean[pos] = calc_mean(&libs, pos, x_len);
-                sd[pos] = calc_sd(&libs, mean[pos], pos, x_len);
+                mean.push(calc_mean(&libs, pos, x_len));
+                sd.push(calc_sd(&libs, mean[pos], pos, x_len));
+                println!("pos is: {}", pos);
+                println!("mean is: {:?}. sd is: {:?}", mean[pos], sd[pos]);
             }
 
             for i in [
