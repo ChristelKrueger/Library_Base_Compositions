@@ -616,10 +616,11 @@ pub mod plot_comp {
                         .map(|x| (*x.0 as isize - *x.1 as isize).abs() as usize) // Get difference b/w mean and element
                         .map(|x| x * x), pos + 1)), // Square difference
                 |x| x.0 + x.1, pos)
-                // Apply transformations to resulting Read
+                // Returns read containing sum of all parsed Reads
+                // Divides resulting Read to get average (i.e. variance)
                 .as_arr().iter()
-                .map(|x| x / libs.len()) // Get average
-                .map(|x| (x as f64).sqrt() as usize), // Get square root of average
+                .map(|x| x / (if libs.len() > 1 {libs.len() - 1} else {1})) // Get average (subtract by 1 as this is sample data)
+                .map(|x| (x as f64).sqrt().round() as usize), // Get square root of average
             pos + 1)
         }
     }
@@ -694,18 +695,6 @@ pub mod plot_comp {
                 |r: &Read| r.C,
                 |r: &Read| r.N
             ].iter()) {
-                /*
-                chart
-                    .draw_series(std::iter::once(Polygon::new(
-                        (0..x_len)
-                            .map(|x| (x + 1, (i.1)(&mean[x]) as isize - (i.1)(&sd[x]) as isize))
-                            .map(|x| (x.0, if x.1 < 0 {0usize} else {x.1 as usize})) //Round off may cause -ve value, so replace them with 0
-                            .chain(
-                            (0..x_len).map(|x| (x + 1, (i.1)(&mean[x]) + (i.1)(&sd[x]))))
-                        .collect::<Vec<(usize, usize)>>(),
-                        &i.0.mix(0.2)
-                    )))?;
-                */
                 chart
                     .draw_series(
                         (0..x_len)
@@ -721,7 +710,6 @@ pub mod plot_comp {
                                 let lower: usize = if lower < 0 {0} else {lower as usize};
                                 let upper = mean + sd;
 
-                                println!("PRINTING ERRORBAR, pos: {}, lower is: {},  mean: {}, upper: {}", pos, lower, mean, upper);
                                 if upper != lower {
                                     Some(ErrorBar::new_vertical(
                                         pos + 1,
@@ -738,7 +726,7 @@ pub mod plot_comp {
                     )?;
             }
         }
-        println!("Chart drawing done");
+
         chart
             .configure_series_labels()
             .background_style(&WHITE.mix(0.8))
