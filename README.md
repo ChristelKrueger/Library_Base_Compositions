@@ -16,6 +16,6 @@ The base composition of sequencing reads depends on the library type (RNA, genom
 * [X] Downloading 100000 reads (from FastQ file) for those libraries and storing them in a sensible way
 *	[X] Extract base compositions per base
 *	[X] Plot compositions
-*	[ ]make nice front end/ability to upload own data
+*	[ ] Make nice front end/ability to upload own data
   * Babraham website
   * Online app?
