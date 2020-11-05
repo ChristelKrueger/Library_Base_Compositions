@@ -4,12 +4,17 @@ pub mod fastq_io {
     use std::fs::OpenOptions;
     use std::process;
 
+    /// Module to provide functionality for easy testing
     pub mod test_utils {
         use std::io::Cursor;
+        /// Returns reader which implements Read trait. Reader yields data passed to parameter _s_
         pub fn return_reader<'a> (s: &'a[u8]) -> Cursor<&[u8]> {
            Cursor::new(s)
         }
 
+        /** Returns a writer which implements Write trait.
+        writer.get_ref()[0..].to_vec() can be used to get the data written to the writer.
+        */
         pub fn return_writer() -> Cursor<Vec<u8>> {
             Cursor::new(Vec::<u8>::new())
         }
@@ -18,6 +23,9 @@ pub mod fastq_io {
     // impl read and write logic for FASTQRead struct
     use crate::sample::FASTQRead;
     impl FASTQRead {
+        /**
+         * Reads a complete FASTQ statement (composed of 4 lines) into the FASTQRead struct from given reader
+         */
         pub fn read<R> (&mut self, reader: &mut R)
         where
             R: BufRead
@@ -34,6 +42,9 @@ pub mod fastq_io {
         }
 
 
+        /**
+         * Prints the contents of FASTQRead. Pass false for a flag if it shouldn't be printed
+         */
         pub fn write<W> (&self, writer: &mut W, header: bool, seq: bool, mid: bool, quals: bool)
         where
             W: Write,
