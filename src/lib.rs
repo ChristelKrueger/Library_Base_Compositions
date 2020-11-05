@@ -568,7 +568,6 @@ pub mod plot_comp {
             .map(|read| Read::from_iter(
                 read.as_arr().iter() // Convert read to iterator over its elements
                 .zip(mean.as_arr().iter()) // Zip it with iterator over mean's elements
-                .inspect(|x| println!("Iterating over x tuple: {:?}", x))
                 .map(|x| (*x.0 as isize - *x.1 as isize).abs() as usize) // Get difference b/w mean and element
                 .map(|x| x * x), pos)) // Square difference
             // Read::from_iter then converts it back into a Read
