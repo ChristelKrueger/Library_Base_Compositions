@@ -511,6 +511,7 @@ pub mod plot_comp {
     #[cfg(test)]
     mod tests {
         use super::*;
+        use super::data_transforms::*;
 
         #[test]
         fn test_calc_mean() {
@@ -560,49 +561,71 @@ pub mod plot_comp {
 
         (x_len, comp)
     }
-    
-    fn calc_mean (libs: &Vec<Vec<Read>>, pos: usize) -> Read {
-        Read::from_iter(libs.iter()
-        .map(move |lib| lib[pos]) //Get reads at pos of lib
-        .fold(Read::new(pos), // Initial value: new read
-                              // Adds values from reads (produced by map |lib| libs[pos]) to accumulated Read
-                              // Then divides values of final accumulated read by x_len
-            |acc, curr| Read::from_iter(
-                acc.as_arr().iter() // Convert accumulated Read to its elements' iterator
-                .zip(curr.as_arr().iter()) // Zip with current Read's elements' iterator                            
-                .map(|x| x.0 + x.1) // Add their corresponding elements
-            , pos)) 
-        .as_arr().iter()
-        .map(|x| x / libs.len()), pos + 1)
-    }
+   
+    mod data_transforms {
+        use super::*;
 
-    fn calc_sd (libs: &Vec<Vec<Read>>, mean: Read, pos: usize) -> Read {
-        Read::from_iter(libs.iter()
-            .map(move |lib| lib[pos]) //Get reads at pos of lib
-            // Get differences from mean
-            .map(|read| Read::from_iter(
-                read.as_arr().iter() // Convert read to iterator over its elements
-                .zip(mean.as_arr().iter()) // Zip it with iterator over mean's elements
-                .map(|x| (*x.0 as isize - *x.1 as isize).abs() as usize) // Get difference b/w mean and element
-                .map(|x| x * x), pos + 1)) // Square difference
-            // Read::from_iter then converts it back into a Read
-            
-            // Get average of differences (squared)
-            .fold(Read::new(pos + 1),
-                |acc, curr| Read::from_iter(
-                    acc.as_arr().iter() //Convert accumulated Read to its elements' iterator
-                    .zip(curr.as_arr().iter()) //Zip with current Read's elements' iterator
-                    .map(|x| x.0 + x.1) // Add the two numbers
-                , pos)) //Calculates sum
+        fn fold_read_vals<I, F> (iter: I, func: F, pos: usize) -> Read
+        where
+            I: Iterator<Item = Read>,
+            F: Fn((&usize, &usize)) -> usize
+        {
+            iter
+                .fold(Read::new(pos),
+                    |acc, curr| Read::from_iter(
+                        acc.as_arr().iter()
+                        .zip(curr.as_arr().iter())
+                        .map(&func)
+                    , pos))
+        }
+
+        pub fn calc_mean (libs: &Vec<Vec<Read>>, pos: usize) -> Read {
+            Read::from_iter(
+                fold_read_vals (
+                    libs.iter()
+                        .map(move |lib| lib[pos]),
+                    |x| x.0 + x.1, pos) //Get reads at pos of lib
             .as_arr().iter()
-            .map(|x| x / libs.len()) // Get average
-            .map(|x| (x as f64).sqrt() as usize) // Get square root of average
-        //Read::from_iter turns the iterators of elements back into a read
-
-        , pos)
+            .map(|x| x / libs.len()), pos + 1)
+        }
+/*
+        Function for calculating range
+        pub fn calc_min_max (libs: &Vec<Vec<Read>>, pos: usize) -> (Read, Read) {
+            (
+                fold_read_vals(
+                    libs.iter()
+                        .map(move |lib| lib[pos]),         
+                    |val| if val.0 < val.1 {*val.0} else {*val.1}, 
+                    pos + 1),
+                fold_read_vals(
+                    libs.iter()
+                        .map(move |lib| lib[pos]),         
+                    |val| if val.0 > val.1 {*val.0} else {*val.1}, 
+                    pos + 1),
+            )
+        }
+*/
+        pub fn calc_sd (libs: &Vec<Vec<Read>>, mean: Read, pos: usize) -> Read {
+            Read::from_iter(fold_read_vals (
+                libs.iter()
+                    .map(move |lib| lib[pos])
+                    //Get differences from mean
+                    .map(|read| Read::from_iter(
+                        read.as_arr().iter() // Convert read to iterator over its elements
+                        .zip(mean.as_arr().iter()) // Zip it with iterator over mean's elements
+                        .map(|x| (*x.0 as isize - *x.1 as isize).abs() as usize) // Get difference b/w mean and element
+                        .map(|x| x * x), pos + 1)), // Square difference
+                |x| x.0 + x.1, pos)
+                // Apply transformations to resulting Read
+                .as_arr().iter()
+                .map(|x| x / libs.len()) // Get average
+                .map(|x| (x as f64).sqrt() as usize), // Get square root of average
+            pos + 1)
+        }
     }
 
     use crate::fastq_io::get_reader;
+    use data_transforms::*;
     pub fn run <R>(mut reader: R, libs: Option<Vec<PathBuf>>) -> Result<(), Box<dyn std::error::Error>>
     where
         R: BufRead,
@@ -658,17 +681,6 @@ pub mod plot_comp {
                 .map(|mut x| read_comp_file(&mut x).1)
                 .collect();
 
-            let mut mean: Vec<Read> = Vec::with_capacity(x_len);
-            let mut sd: Vec<Read> = Vec::with_capacity(x_len);
-
-            println!("x_len: {}", x_len);
-            for pos in 0..x_len {
-                mean.push(calc_mean(&libs, pos));
-                sd.push(calc_sd(&libs, mean[pos], pos));
-                println!("Data was: {:?}, {:?}", libs[0][pos], libs[1][pos]);
-                println!("mean is: {:?}. sd is: {:?}", mean[pos], sd[pos]);
-            }
-
             for i in [
                 &MAGENTA,
                 &BLUE,
@@ -682,6 +694,7 @@ pub mod plot_comp {
                 |r: &Read| r.C,
                 |r: &Read| r.N
             ].iter()) {
+                /*
                 chart
                     .draw_series(std::iter::once(Polygon::new(
                         (0..x_len)
@@ -692,9 +705,40 @@ pub mod plot_comp {
                         .collect::<Vec<(usize, usize)>>(),
                         &i.0.mix(0.2)
                     )))?;
+                */
+                chart
+                    .draw_series(
+                        (0..x_len)
+                            .filter_map(|pos| {
+                                let mean = calc_mean(&libs, pos);
+                                let sd = i.1(&calc_sd(&libs, mean, pos));
+                                let mean = i.1(&mean);
+
+                                // Logic to prevent overflows
+                                // Negative results may be produced due to rounding-off
+                                // So convert -ve results to 0
+                                let lower = mean as isize - sd as isize;
+                                let lower: usize = if lower < 0 {0} else {lower as usize};
+                                let upper = mean + sd;
+
+                                println!("PRINTING ERRORBAR, pos: {}, lower is: {},  mean: {}, upper: {}", pos, lower, mean, upper);
+                                if upper != lower {
+                                    Some(ErrorBar::new_vertical(
+                                        pos + 1,
+                                        lower,
+                                        mean,
+                                        upper,
+                                        (&i.0.mix(0.2)).filled(),
+                                        5
+                                    ))
+                                } else {
+                                    None
+                                }
+                            })                            
+                    )?;
             }
         }
-
+        println!("Chart drawing done");
         chart
             .configure_series_labels()
             .background_style(&WHITE.mix(0.8))
