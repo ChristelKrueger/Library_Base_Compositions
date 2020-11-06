@@ -7,14 +7,14 @@ pub mod fastq_io {
     /// Module to provide functionality for easy testing
     pub mod test_utils {
         use std::io::Cursor;
-        /// Returns reader which implements Read trait. Reader yields data passed to parameter _s_
+        /// Returns reader which implements Read trait.
+        /// - `s`: Data which should be yielded by the reader upon read
         pub fn return_reader<'a> (s: &'a[u8]) -> Cursor<&[u8]> {
            Cursor::new(s)
         }
 
-        /** Returns a writer which implements Write trait.
-        writer.get_ref()[0..].to_vec() can be used to get the data written to the writer.
-        */
+        /// Returns a writer which implements Write trait.
+        /// `writer.get_ref()[0..].to_vec()` can be used to get the data written to the writer.
         pub fn return_writer() -> Cursor<Vec<u8>> {
             Cursor::new(Vec::<u8>::new())
         }
@@ -23,9 +23,9 @@ pub mod fastq_io {
     // impl read and write logic for FASTQRead struct
     use crate::sample::FASTQRead;
     impl FASTQRead {
-        /**
-         * Reads a complete FASTQ statement (composed of 4 lines) into the FASTQRead struct from given reader
-         */
+        
+        /// Reads a complete FASTQ statement (composed of 4 lines) into itself
+        /// - `reader`: Object implementing `std::io::BufRead` from which to read lines
         pub fn read<R> (&mut self, reader: &mut R)
         where
             R: BufRead
@@ -42,9 +42,13 @@ pub mod fastq_io {
         }
 
 
-        /**
-         * Prints the contents of FASTQRead. Pass false for a flag if it shouldn't be printed
-         */
+        
+        /// Prints the contents of FASTQRead. Pass false for a flag if it shouldn't be printed
+        /// - `writer` Object implementing `std::io::Write` to which to write FASTQ-formatted data
+        /// - `header` Pass true to print the _header_ line of a FASTQ Read (starts with `@`)
+        /// - `seq` Pass true to print the _sequence_ line of a FASTQ Read
+        /// - `mid` Pass true to print the _mid_ line of a FASTQ Read (starts with `+`)
+        /// - `quals` Pass true to print the _quality_ line of a FASTQ Read
         pub fn write<W> (&self, writer: &mut W, header: bool, seq: bool, mid: bool, quals: bool)
         where
             W: Write,
@@ -58,6 +62,11 @@ pub mod fastq_io {
 
     use crate::base_extraction::Read;
     impl Read {
+        /// Reads number of occurences per base into array of Reads, per column
+        /// - `comp`: Array of Reads into which composition will be read. 
+        /// Extra elements may be added if length of a line of FASTQ quality data is greater than length of given array.
+        /// Occurences per base for first column will be read to first element of `comp`, and so on.
+        /// - `reader`: Object implementing `std::io::BufRead` from which to read lines
         pub fn read <R>(comp: &mut Vec<Read>, reader: &mut R) -> bool
         where
             R: BufRead
