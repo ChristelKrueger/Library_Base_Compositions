@@ -40,8 +40,6 @@ pub mod fastq_io {
                 **s = s.trim().to_string();
             }
         }
-
-
         
         /// Prints the contents of FASTQRead. Pass false for a flag if it shouldn't be printed
         /// - `writer` Object implementing `std::io::Write` to which to write FASTQ-formatted data
@@ -218,6 +216,12 @@ pub mod sample {
         #[structopt(short = "Z", long = "stdout")]
         stdout: bool,
 
+        #[structopt(flatten)]
+        sample_args: SampleArgs,
+    }
+
+    #[derive(Debug, StructOpt)]
+    struct SampleArgs {
         /// Don't include header in output
         #[structopt(long = "skip-header")]
         header: bool,
@@ -294,16 +298,37 @@ pub mod sample {
         }
     }
 
+    fn check_read(read: &mut FASTQRead, args: &SampleArgs) -> bool {
+        if let Some(n) = args.trimmed_length {
+            read.trim(n);
+        };
+
+        // Check for numbers in reads
+        if read.check_colorspace() {
+            info!("Found numbers in reads - this is probably colorspace");
+            return false;
+        }
+
+        // Count the N's
+        if Some(read.count_n()) > args.n_content {
+            debug!("N count too high - skipping");
+            return false;
+        }
+
+        if read.get_average_quality() < args.min_phred_score {
+            debug!("Quality too low - skipping");
+            return false;
+        }
+
+        true
+    }
+
     pub fn run<R, W>(mut reader: R, mut writer: W, args: Cli)
     where
         R: BufRead,
         W: Write,
     {
         info!("Arguments recieved: {:#?}", args);
-
-        //This is done as we want default value to be usize::MAX, which is not supported by StructOpt
-        //This is a workaround
-        let n_content = match args.n_content {Some(t) => t, None => usize::MAX};
 
         let mut read = FASTQRead::new(0);
 
@@ -316,39 +341,16 @@ pub mod sample {
         // So as a stopgap we are flushing after printing a single read, which defeats the purpose of
         // using BufWriter
 
-        loop {
+        while valid_seqs >= args.target_read_count {
             read.read(&mut reader);
-            if let Some(n) = args.trimmed_length {
-                read.trim(n);
-            }
+            if check_read(&mut read, &args.sample_args) {
+                read.write(&mut writer, !args.sample_args.header, !args.sample_args.seq, !args.sample_args.mid, !args.sample_args.quals);
+                writer.flush().expect("Error flushing stream");
 
-            // Check for numbers in reads
-            if read.check_colorspace() {
-                info!("Found numbers in reads - this is probably colorspace");
-                break;
-            }
-
-            // Count the N's
-            if read.count_n() > n_content {
-                debug!("N count too high - skipping");
-                continue;
-            }
-
-            if read.get_average_quality() < args.min_phred_score {
-                debug!("Quality too low - skipping");
-                continue;
-            }
-
-            read.write(&mut writer, !args.header, !args.seq, !args.mid, !args.quals);
-            writer.flush().expect("Error flushing stream");
-
-            valid_seqs += 1;
-
-            if valid_seqs >= args.target_read_count {
-                info!("Found enough sequences\n");
-                break;
+                valid_seqs += 1;
             }
         }
+        info!("Found enough sequences\n");
     }
 }
 
