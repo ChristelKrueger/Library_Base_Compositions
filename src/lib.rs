@@ -384,8 +384,7 @@ pub mod base_extraction {
         #[test]
         fn test_percentage () {
             assert_eq!(run_with_content(b"AA\nTA\nGA\nCA\nNA\n"),
-                std::str::from_utf8(br#"2
-[{"pos":1,"A":20,"T":20,"G":20,"C":20,"N":20},{"pos":2,"A":100,"T":0,"G":0,"C":0,"N":0}]"#).unwrap())
+                std::str::from_utf8(br#"{"lib":[{"pos":1,"A":20,"T":20,"G":20,"C":20,"N":20},{"pos":2,"A":100,"T":0,"G":0,"C":0,"N":0}],"len":2}"#).unwrap())
         }
 
         use crate::fastq_io;
@@ -433,6 +432,13 @@ pub mod base_extraction {
         pub N: usize,
     }
 
+    /// Can be used to send Vec<Read> to another program in JSON format
+    #[derive(Serialize, Deserialize, Clone, Debug)]
+    pub struct LibReads {
+        pub lib: Vec<Read>,
+        pub len: usize
+    }
+
     impl Read {
         pub fn new (pos: usize) -> Read {
             Read {pos: pos, A: 0, T: 0, G: 0, C: 0, N: 0}
@@ -448,7 +454,44 @@ pub mod base_extraction {
                 _ => panic!("Invalid character {:?} == {:?} found in read", *s, s.to_ascii_lowercase())
             }            
         }
+    }
+    
+    pub fn run<R, W>(mut reader: R, mut writer: W)
+    where
+        R: BufRead,
+        W: Write,
+    {
+        // Each element represents a column of the seqs
+        let mut comp: Vec<Read> = Vec::with_capacity(50); //Won't have to resize array every time
+ 
+        let len = comp.len();
+        for c in comp.iter_mut().zip(0..len) {
+            *c.0 = Read {pos: c.1, A: 0, T: 0, G: 0, C: 0, N: 0}; //Init all elements
+        }
 
+        //Read seqs into Read arr
+        while Read::read(&mut comp, &mut reader){}
+        
+        //Convert raw numbers into %age and convert pos to start from 1
+        for c in comp.iter_mut() {
+            c.calc_percentage();
+            c.pos += 1;
+        }
+        let len = comp.len();
+
+        write!(writer, "{}", serde_json::to_string(&LibReads {len, lib: comp}).unwrap()).unwrap();
+    }
+}
+
+pub mod plot_comp {
+    use crate::base_extraction::{LibReads, Read};
+    use serde_json;
+    use structopt::StructOpt;
+    use std::path::PathBuf;
+    use plotters::prelude::*;
+
+    // Add utility methods
+    impl Read {
         // Useful for making calculations on all 5 fields
         /// Returns all 5 bases as an array
         pub fn as_arr (&self) -> [usize; 5] {
@@ -475,39 +518,6 @@ pub mod base_extraction {
             *self = Read::from_iter(self.as_arr().iter().map(|&x| ((x as f32 / sum) * 100.0).round() as usize), self.pos);
         }
     }
-    
-    pub fn run<R, W>(mut reader: R, mut writer: W)
-    where
-        R: BufRead,
-        W: Write,
-    {
-        // Each element represents a column of the seqs
-        let mut comp: Vec<Read> = Vec::new();
- 
-        let len = comp.len();
-        for c in comp.iter_mut().zip(0..len) {
-            *c.0 = Read {pos: c.1, A: 0, T: 0, G: 0, C: 0, N: 0};
-        }
-
-        //Read seqs into Read arr
-        while Read::read(&mut comp, &mut reader){}
-        
-        //Convert raw numbers into %age and convert pos to start from 1
-        for c in comp.iter_mut() {
-            c.calc_percentage();
-            c.pos += 1;
-        }
-        write!(writer, "{}\n", serde_json::to_string(&comp.len()).unwrap()).unwrap();
-        write!(writer, "{}", serde_json::to_string(&comp).unwrap()).unwrap();
-    }
-}
-
-pub mod plot_comp {
-    use crate::base_extraction::Read;
-    use serde_json;
-    use structopt::StructOpt;
-    use std::path::PathBuf;
-    use plotters::prelude::*;
 
     #[derive(Debug, StructOpt)]
     #[structopt(name = "Plot base composition", about = "Plots base composition of given JSON file")]
@@ -538,7 +548,7 @@ pub mod plot_comp {
                 vec![
                     Read {pos: 1, A: 7, T: 8, G: 53, C: 30, N: 2},
                 ]
-            ], 0), 
+            ], 1), 
             Read {pos: 1, A: 7, T: 8, G: 54, C: 28, N: 2}
             )
         }
@@ -547,13 +557,13 @@ pub mod plot_comp {
         fn test_calc_sd () {
             assert_eq!(calc_sd(&vec![
                 vec![
-                    Read {pos: 0, A: 25, T: 0, G: 75, C: 0, N: 10},
+                    Read {pos: 1, A: 25, T: 0, G: 75, C: 0, N: 10},
                 ],
                 vec![
-                    Read {pos: 0, A: 75, T: 100, G: 100, C: 0, N: 10},
-            ]], Read {pos: 0, A: 50, T: 50, G: 87, C: 0, N: 10},
-             0), //This is mean of above values 
-            Read {pos: 0, A: 25, T: 50, G: 12, C: 0, N: 0}
+                    Read {pos: 1, A: 75, T: 100, G: 100, C: 0, N: 10},
+            ]], Read {pos: 1, A: 50, T: 50, G: 87, C: 0, N: 10},
+             1), //This is mean of above values 
+            Read {pos: 1, A: 35, T: 71, G: 18, C: 0, N: 0}
             )
         }
     }
@@ -563,18 +573,12 @@ pub mod plot_comp {
     where R: BufRead {
         let mut s = String::with_capacity(500);
 
-        //Read x_len from first line
-        reader.read_line(&mut s).expect("Error reading line");
-        s = s.trim().to_string();
-        let x_len: usize = s.parse::<usize>().expect("Error reading max len, rerun extract-comp again");
-        s.clear();
-
         //Read next line for JSON data
         reader.read_line(&mut s).expect("Error reading line");
-        let mut comp: Vec<Read> = serde_json::from_str(&s).expect("Error converting JSON to data");
-        comp.sort_by(|a, b| a.pos.cmp(&b.pos));
+        let mut comp: LibReads = serde_json::from_str(&s).expect("Error converting JSON to data");
+        comp.lib.sort_by(|a, b| a.pos.cmp(&b.pos));
 
-        (x_len, comp)
+        (comp.len, comp.lib)
     }
    
     mod data_transforms {
@@ -598,10 +602,10 @@ pub mod plot_comp {
             Read::from_iter(
                 fold_read_vals (
                     libs.iter()
-                        .map(move |lib| lib[pos]),
-                    |x| x.0 + x.1, pos) //Get reads at pos of lib
+                        .map(move |lib| lib[pos - 1]),
+                    |x| x.0 + x.1, pos - 1) //Get reads at pos of lib
             .as_arr().iter()
-            .map(|x| x / libs.len()), pos + 1)
+            .map(|x| x / libs.len()), pos)
         }
 /*
         Function for calculating range
@@ -623,20 +627,20 @@ pub mod plot_comp {
         pub fn calc_sd (libs: &Vec<Vec<Read>>, mean: Read, pos: usize) -> Read {
             Read::from_iter(fold_read_vals (
                 libs.iter()
-                    .map(move |lib| lib[pos])
+                    .map(move |lib| lib[pos - 1])
                     //Get differences from mean
                     .map(|read| Read::from_iter(
                         read.as_arr().iter() // Convert read to iterator over its elements
                         .zip(mean.as_arr().iter()) // Zip it with iterator over mean's elements
                         .map(|x| (*x.0 as isize - *x.1 as isize).abs() as usize) // Get difference b/w mean and element
-                        .map(|x| x * x), pos + 1)), // Square difference
-                |x| x.0 + x.1, pos)
+                        .map(|x| x * x), pos)), // Square difference
+                |x| x.0 + x.1, pos - 1)
                 // Returns read containing sum of all parsed Reads
                 // Divides resulting Read to get average (i.e. variance)
                 .as_arr().iter()
                 .map(|x| x / (if libs.len() > 1 {libs.len() - 1} else {1})) // Get average (subtract by 1 as this is sample data)
                 .map(|x| (x as f64).sqrt().round() as usize), // Get square root of average
-            pos + 1)
+            pos)
         }
     }
 
