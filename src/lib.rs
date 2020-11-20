@@ -26,6 +26,7 @@ pub mod fastq_io {
         
         /// Reads a complete FASTQ statement (composed of 4 lines) into itself
         /// - `reader`: Object implementing `std::io::BufRead` from which to read lines
+        /// Note: Will terminate program if EOF reached
         pub fn read<R> (&mut self, reader: &mut R)
         where
             R: BufRead
@@ -298,6 +299,7 @@ pub mod sample {
         }
     }
 
+    use std::process;
     fn check_read(read: &mut FASTQRead, args: &SampleArgs) -> bool {
         if let Some(n) = args.trimmed_length {
             read.trim(n);
@@ -306,13 +308,15 @@ pub mod sample {
         // Check for numbers in reads
         if read.check_colorspace() {
             info!("Found numbers in reads - this is probably colorspace");
-            return false;
+            process::exit(0);
         }
 
         // Count the N's
-        if Some(read.count_n()) > args.n_content {
-            debug!("N count too high - skipping");
-            return false;
+        if let Some(n) = args.n_content {
+            if read.count_n() > n {
+                debug!("N count of current line ({}) too high - skipping", read.count_n());
+                return false;
+            }
         }
 
         if read.get_average_quality() < args.min_phred_score {
@@ -341,7 +345,7 @@ pub mod sample {
         // So as a stopgap we are flushing after printing a single read, which defeats the purpose of
         // using BufWriter
 
-        while valid_seqs >= args.target_read_count {
+        while valid_seqs <= args.target_read_count {
             read.read(&mut reader);
             if check_read(&mut read, &args.sample_args) {
                 read.write(&mut writer, !args.sample_args.header, !args.sample_args.seq, !args.sample_args.mid, !args.sample_args.quals);
