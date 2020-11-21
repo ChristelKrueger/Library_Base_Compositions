@@ -1,6 +1,5 @@
-
-use sample_fastq_file::plot_comp::{run, Cli};
-use sample_fastq_file::fastq_io;
+use sample_fastq::{run, Cli};
+use fastq_io;
 use simple_logger::SimpleLogger;
 use structopt::StructOpt;
 
@@ -9,6 +8,6 @@ fn main() {
     SimpleLogger::new().init().unwrap();
 
     let args = Cli::from_args();
-
-    run(fastq_io::get_reader(&args.input), args.libs).expect("Error drawing chart");
+    //Program starts.
+    run(fastq_io::get_reader(&args.input), fastq_io::get_writer(&args.output), args);
 }
