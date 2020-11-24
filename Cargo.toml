@@ -6,6 +6,10 @@ members = [
     "plot_comp",
 ]
 
+exclude = [
+    "fastq2comp",
+]
+
 # [package]
 # name = "sample_fastq_file"
 # version = "0.1.0"
