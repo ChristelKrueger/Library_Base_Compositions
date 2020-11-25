@@ -224,7 +224,7 @@ where R: BufRead {
     info!("Found enough sequences\n");
 
     for r in base_comp.lib.iter_mut() {
-        r.percentage();
+        r.bases.percentage();
     }
 
     base_comp.jsonify()

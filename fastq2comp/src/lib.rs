@@ -120,6 +120,15 @@ impl BaseCompColBases {
     pub fn new() -> BaseCompColBases {
         BaseCompColBases {A: 0, G: 0, T: 0, C: 0, N: 0}
     }
+
+    pub fn percentage (&mut self) {
+        let sum = (self.A + self.G + self.C + self.T + self.N) as f64;
+        self.A = ((self.A as f64 / sum)  * 100f64).round() as usize;
+        self.G = ((self.G as f64 / sum)  * 100f64).round() as usize;
+        self.T = ((self.T as f64 / sum)  * 100f64).round() as usize;
+        self.C = ((self.C as f64 / sum)  * 100f64).round() as usize;
+        self.N = ((self.N as f64 / sum)  * 100f64).round() as usize;
+    }
 }
 
 use std::iter::FromIterator;
@@ -163,16 +172,18 @@ mod col_base_comp_tests {
     #[test]
     fn test_percentage() {
         let mut read = BaseCompCol::new(0);
-        for c in "AGTCGA".as_bytes().iter() {
+        for c in "ACTGN".as_bytes().iter() {
             read.extract(c);
         }
-        read.percentage();
+        read.bases.percentage();
 
-        assert_eq!(read.bases.A, 20);
-        assert_eq!(read.bases.C, 20);
-        assert_eq!(read.bases.T, 20);
-        assert_eq!(read.bases.G, 20);
-        assert_eq!(read.bases.N, 20);
+        println!("{:?}", read);
+
+        assert_eq!(read.bases.A, 20, "Testing A");
+        assert_eq!(read.bases.C, 20, "Testing C");
+        assert_eq!(read.bases.T, 20, "Testing T");
+        assert_eq!(read.bases.G, 20, "Testing G");
+        assert_eq!(read.bases.N, 20, "Testing N");
     }
 }
 
@@ -190,14 +201,6 @@ impl BaseCompCol {
             b'N' => self.bases.N += 1,
             _ => panic!("Invalid character {:?} == {:?} found in read", *s, s.to_ascii_lowercase())
         }            
-    }
-
-    pub fn percentage (&mut self) {
-        let sum = (self.bases.A + self.bases.G + self.bases.C + self.bases.T) as f64;
-        self.bases.A = ((self.bases.A as f64 / sum)  * 100f64).round() as usize;
-        self.bases.G = ((self.bases.G as f64 / sum)  * 100f64).round() as usize;
-        self.bases.T = ((self.bases.T as f64 / sum)  * 100f64).round() as usize;
-        self.bases.C = ((self.bases.C as f64 / sum)  * 100f64).round() as usize;
     }
 }
 
