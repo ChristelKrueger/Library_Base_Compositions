@@ -329,7 +329,7 @@ impl BaseComp {
     pub fn init (len: usize) -> BaseComp {
         let mut base_comp = BaseComp { lib: Vec::with_capacity(len), len: 0 };
         for i in 0..len {
-            base_comp.lib[i] = ColBaseComp::new(len);
+            base_comp.lib[i] = ColBaseComp::new(len + 1);
         }
 
         base_comp
