@@ -319,7 +319,7 @@ impl ColBaseComp {
     }
 }
 
-#[derive(serde::Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct BaseComp {
     lib: Vec<ColBaseComp>,
     len: usize,
