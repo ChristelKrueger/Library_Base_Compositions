@@ -1,5 +1,5 @@
 #[cfg(tests)]
-mod tests {
+mod sample_fastq_tests {
     use super::*;
 
     use std::io::Cursor;
@@ -72,6 +72,7 @@ use log::{debug, info};
 use structopt::StructOpt;
 use std::path::PathBuf;
 use std::io::BufRead;
+
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "sample fastq file", about = "Filters given FASTQ file according to given specifications.")]
@@ -276,6 +277,20 @@ mod col_base_comp_tests {
         read.extract(&b'N');
         assert_eq!(read.N, 1);
     }
+    #[test]
+    fn test_percentage() {
+        let mut read = ColBaseComp::new(0);
+        for c in "AGTCGA".as_bytes().iter() {
+            read.extract(c);
+        }
+        read.percentage();
+
+        assert_eq!(read.A, 20);
+        assert_eq!(read.C, 20);
+        assert_eq!(read.T, 20);
+        assert_eq!(read.G, 20);
+        assert_eq!(read.N, 20);
+    }
 }
 
 impl ColBaseComp {
@@ -284,7 +299,7 @@ impl ColBaseComp {
         ColBaseComp {pos: pos, A: 0, T: 0, G: 0, C: 0, N: 0}
     }
 
-    pub fn extract(&mut self, s: &u8) {
+    pub fn extract (&mut self, s: &u8) {
         match s {
             b'A' => self.A += 1,
             b'T' => self.T += 1,
