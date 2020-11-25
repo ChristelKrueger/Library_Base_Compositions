@@ -40,7 +40,7 @@ mod tests {
             vec![
                 Read {pos: 1, bases: Bases {A: 7, T: 8, G: 53, C: 30, N: 2}},
             ]
-        ], 1), 
+        ], 0), 
         Bases {A: 7, T: 8, G: 54, C: 28, N: 2}
         )
     }
@@ -52,9 +52,9 @@ mod tests {
                 Read {pos: 1, bases: Bases {A: 25, T: 0, G: 75, C: 0, N: 10}},
             ],
             vec![
-                Read {pos: 1, bases: Bases {A: 75, T: 100, G: 100, C: 0, N: 10} },
+                Read {pos: 1, bases: Bases {A: 75, T: 100, G: 100, C: 0, N: 10}},
         ]], Bases {A: 50, T: 50, G: 87, C: 0, N: 10},
-            1), //This is mean of above values 
+            0), //This is mean of above values 
         Bases {A: 35, T: 71, G: 18, C: 0, N: 0}
         )
     }
