@@ -1,9 +1,15 @@
+use fastq2comp::{
+    BaseCompCol as Read,
+    BaseComp as LibReads,
+    BaseCompColBases as Bases,
+    io_utils
+};
 
-use extract_comp::{LibReads, Read};
 use serde_json;
 use structopt::StructOpt;
 use std::path::PathBuf;
 use plotters::prelude::*;
+
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "Plot base composition", about = "Plots base composition of given JSON file")]
@@ -29,13 +35,13 @@ mod tests {
         assert_eq!(calc_mean(
         &vec![
             vec![
-                Read {pos: 1, A: 7, T: 8, G: 55, C: 27, N: 2},
+                Read {pos: 1, bases: Bases {A: 7, T: 8, G: 55, C: 27, N: 2}},
             ],
             vec![
-                Read {pos: 1, A: 7, T: 8, G: 53, C: 30, N: 2},
+                Read {pos: 1, bases: Bases {A: 7, T: 8, G: 53, C: 30, N: 2}},
             ]
         ], 1), 
-        Read {pos: 1, A: 7, T: 8, G: 54, C: 28, N: 2}
+        Bases {A: 7, T: 8, G: 54, C: 28, N: 2}
         )
     }
 
@@ -43,13 +49,13 @@ mod tests {
     fn test_calc_sd () {
         assert_eq!(calc_sd(&vec![
             vec![
-                Read {pos: 1, A: 25, T: 0, G: 75, C: 0, N: 10},
+                Read {pos: 1, bases: Bases {A: 25, T: 0, G: 75, C: 0, N: 10}},
             ],
             vec![
-                Read {pos: 1, A: 75, T: 100, G: 100, C: 0, N: 10},
-        ]], Read {pos: 1, A: 50, T: 50, G: 87, C: 0, N: 10},
+                Read {pos: 1, bases: Bases {A: 75, T: 100, G: 100, C: 0, N: 10} },
+        ]], Bases {A: 50, T: 50, G: 87, C: 0, N: 10},
             1), //This is mean of above values 
-        Read {pos: 1, A: 35, T: 71, G: 18, C: 0, N: 0}
+        Bases {A: 35, T: 71, G: 18, C: 0, N: 0}
         )
     }
 }
@@ -70,28 +76,19 @@ where R: BufRead {
 mod data_transforms {
     use super::*;
 
-    fn fold_read_vals<I, F> (iter: I, func: F, pos: usize) -> Read
-    where
-        I: Iterator<Item = Read>,
-        F: Fn((&usize, &usize)) -> usize
-    {
-        iter
-            .fold(Read::new(pos),
-                |acc, curr| Read::from_iter(
-                    acc.as_arr().iter()
-                    .zip(curr.as_arr().iter())
-                    .map(&func)
-                , pos))
-    }
-
-    pub fn calc_mean (libs: &Vec<Vec<Read>>, pos: usize) -> Read {
-        Read::from_iter(
-            fold_read_vals (
-                libs.iter()
-                    .map(move |lib| lib[pos - 1]),
-                |x| x.0 + x.1, pos - 1) //Get reads at pos of lib
-        .as_arr().iter()
-        .map(|x| x / libs.len()), pos)
+    pub fn calc_mean (libs: &Vec<Vec<Read>>, pos: usize) -> Bases {
+        libs.iter()
+        .map(move |lib| lib[pos].bases)
+        .fold( Bases::new(),
+            |acc, curr|
+                acc.iter()
+                .zip(curr.iter())
+                .map(|base| base.0 + base.1)
+                .collect()
+        ) //Calculates sum of Bases
+        .iter()
+        .map(|x| x / libs.len()) //Divides each base with number of bases
+        .collect()
     }
 /*
     Function for calculating range
@@ -109,8 +106,8 @@ mod data_transforms {
                 pos + 1),
         )
     }
-*/
-    pub fn calc_sd (libs: &Vec<Vec<Read>>, mean: Read, pos: usize) -> Read {
+
+        pub fn calc_sd (libs: &Vec<Vec<Read>>, mean: Read, pos: usize) -> Read {
         Read::from_iter(fold_read_vals (
             libs.iter()
                 .map(move |lib| lib[pos - 1])
@@ -128,9 +125,40 @@ mod data_transforms {
             .map(|x| (x as f64).sqrt().round() as usize), // Get square root of average
         pos)
     }
+*/
+
+    pub fn calc_sd (libs: &Vec<Vec<Read>>, mean: Bases, pos: usize) -> Bases {
+        libs.iter()
+        .map(move |lib| lib[pos].bases)
+        //Get differences from mean
+        .map(|read| 
+
+            // Get difference b/w mean and element
+            read.iter() // Convert read to iterator over its elements
+            .zip(mean.iter()) // Zip it with iterator over mean's elements
+            .map(|x| (x.0 as isize - x.1 as isize).abs() as usize) 
+
+            // Square difference
+            .map(|x| x * x) 
+            .collect()
+        ) 
+        // Calculates sum of squared values in Bases
+        .fold(Bases::new(),
+            |acc, curr: Bases|
+            acc.iter()
+            .zip(curr.iter())
+            .map(|base| base.0 + base.1)
+            .collect()
+        )
+        .iter()
+        // Divides squared values with length of libs to get average (i.e. variance)
+        .map(|x| x / (if libs.len() > 1 {libs.len() - 1} else {1})) // Get average (subtract by 1 as this is sample data)
+        .map(|x| (x as f64).sqrt().round() as usize) // Get square root of average
+        .collect()
+    }
 }
 
-use fastq_io::get_reader;
+use io_utils::get_reader;
 use data_transforms::*;
 pub fn run <R>(mut reader: R, libs: Option<Vec<PathBuf>>) -> Result<(), Box<dyn std::error::Error>>
 where
@@ -166,11 +194,11 @@ where
         (&CYAN, "Base C"),
         (&RED, "Unknown Base"),
     ].iter().zip([
-        |r: &Read| r.A,
-        |r: &Read| r.T,
-        |r: &Read| r.G,
-        |r: &Read| r.C,
-        |r: &Read| r.N
+        |r: &Read| r.bases.A,
+        |r: &Read| r.bases.T,
+        |r: &Read| r.bases.G,
+        |r: &Read| r.bases.C,
+        |r: &Read| r.bases.N
     ].iter()) {
         chart
             .draw_series(LineSeries::new(
@@ -194,11 +222,11 @@ where
             &CYAN,
             &RED,
         ].iter().zip([
-            |r: &Read| r.A,
-            |r: &Read| r.T,
-            |r: &Read| r.G,
-            |r: &Read| r.C,
-            |r: &Read| r.N
+            |base: &Bases| base.A,
+            |base: &Bases| base.T,
+            |base: &Bases| base.G,
+            |base: &Bases| base.C,
+            |base: &Bases| base.N
         ].iter()) {
             chart
                 .draw_series(
@@ -239,4 +267,15 @@ where
         .draw()?;
 
     Ok(())
+}
+
+use simple_logger::SimpleLogger;
+
+fn main() {
+    //Set up logger.
+    SimpleLogger::new().init().unwrap();
+
+    let args = Cli::from_args();
+
+    run(io_utils::get_reader(&args.input), args.libs).expect("Error drawing chart");
 }
