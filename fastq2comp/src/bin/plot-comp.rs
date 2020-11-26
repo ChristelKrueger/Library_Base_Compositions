@@ -90,49 +90,12 @@ mod data_transforms {
         .map(|x| x / libs.len()) //Divides each base with number of bases
         .collect()
     }
-/*
-    Function for calculating range
-    pub fn calc_min_max (libs: &Vec<Vec<Read>>, pos: usize) -> (Read, Read) {
-        (
-            fold_read_vals(
-                libs.iter()
-                    .map(move |lib| lib[pos]),         
-                |val| if val.0 < val.1 {*val.0} else {*val.1}, 
-                pos + 1),
-            fold_read_vals(
-                libs.iter()
-                    .map(move |lib| lib[pos]),         
-                |val| if val.0 > val.1 {*val.0} else {*val.1}, 
-                pos + 1),
-        )
-    }
-
-        pub fn calc_sd (libs: &Vec<Vec<Read>>, mean: Read, pos: usize) -> Read {
-        Read::from_iter(fold_read_vals (
-            libs.iter()
-                .map(move |lib| lib[pos - 1])
-                //Get differences from mean
-                .map(|read| Read::from_iter(
-                    read.as_arr().iter() // Convert read to iterator over its elements
-                    .zip(mean.as_arr().iter()) // Zip it with iterator over mean's elements
-                    .map(|x| (*x.0 as isize - *x.1 as isize).abs() as usize) // Get difference b/w mean and element
-                    .map(|x| x * x), pos)), // Square difference
-            |x| x.0 + x.1, pos - 1)
-            // Returns read containing sum of all parsed Reads
-            // Divides resulting Read to get average (i.e. variance)
-            .as_arr().iter()
-            .map(|x| x / (if libs.len() > 1 {libs.len() - 1} else {1})) // Get average (subtract by 1 as this is sample data)
-            .map(|x| (x as f64).sqrt().round() as usize), // Get square root of average
-        pos)
-    }
-*/
 
     pub fn calc_sd (libs: &Vec<Vec<Read>>, mean: Bases, pos: usize) -> Bases {
         libs.iter()
         .map(move |lib| lib[pos].bases)
         //Get differences from mean
-        .map(|read| 
-
+        .map(|read|
             // Get difference b/w mean and element
             read.iter() // Convert read to iterator over its elements
             .zip(mean.iter()) // Zip it with iterator over mean's elements
@@ -141,7 +104,7 @@ mod data_transforms {
             // Square difference
             .map(|x| x * x) 
             .collect()
-        ) 
+        )
         // Calculates sum of squared values in Bases
         .fold(Bases::new(),
             |acc, curr: Bases|

@@ -81,6 +81,7 @@ pub struct IterableBaseCompColBases {
 impl Iterator for IterableBaseCompColBases {
     type Item = usize;
 
+    // VERY VERY IMP. If you change this, then also change the impl FromIterator<usize> for BaseCompColBases
     fn next(&mut self) -> Option<usize> {
         match self.state {
             BaseCompColBasesIteratorState::A => {self.state = BaseCompColBasesIteratorState::C; Some(self.bases.A)},
@@ -105,9 +106,9 @@ impl From<BaseCompColBases> for IterableBaseCompColBases {
 #[derive(Clone, Copy)]
 pub enum BaseCompColBasesIteratorState {
     A,
+    C,
     G,
     T,
-    C,
     N,
     End,
 }
@@ -122,12 +123,8 @@ impl BaseCompColBases {
     }
 
     pub fn percentage (&mut self) {
-        let sum = (self.A + self.G + self.C + self.T + self.N) as f64;
-        self.A = ((self.A as f64 / sum)  * 100f64).round() as usize;
-        self.G = ((self.G as f64 / sum)  * 100f64).round() as usize;
-        self.T = ((self.T as f64 / sum)  * 100f64).round() as usize;
-        self.C = ((self.C as f64 / sum)  * 100f64).round() as usize;
-        self.N = ((self.N as f64 / sum)  * 100f64).round() as usize;
+        let sum = self.iter().fold(0, |acc, curr| acc + curr) as f64;
+        *self = self.iter().map(|base| ((base as f64 / sum)  * 100f64).round() as usize).collect();
     }
 }
 
@@ -137,7 +134,14 @@ impl FromIterator<usize> for BaseCompColBases {
         let mut c = IterableBaseCompColBases::from(BaseCompColBases {A: 0, G: 0, C:0, T:0, N:0});
         let mut iter = iter.into_iter();
 
-        for ele in &mut [&mut c.bases.A, &mut c.bases.G, &mut c.bases.T, &mut c.bases.C, &mut c.bases.N].iter_mut() {
+        for ele in &mut
+        // VERY VERY IMP. If you change this, then also change the impl Iterator for IterableBaseCompColBases
+        // so the corresponding bases are collected into their corresponding spaces
+            [&mut c.bases.A,
+             &mut c.bases.C,
+             &mut c.bases.G,
+             &mut c.bases.T, 
+             &mut c.bases.N].iter_mut() {
             **ele = match iter.next() {
                 Some(n) => n,
                 None => panic!("Improper iterator recieved"),
