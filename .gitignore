@@ -1,4 +1,2 @@
 /target
 Cargo.lock
-fastq2comp/target/
-plot_comp/target/
