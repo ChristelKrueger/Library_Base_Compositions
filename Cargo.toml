@@ -1,4 +1,5 @@
 [workspace]
 members = [
-    "fastq2comp"
+    "fastq2comp",
+    "fastq2comp4web",
 ]
