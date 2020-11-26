@@ -3,7 +3,5 @@
 
 for arg; do
   echo $arg
-  echo $arg"_filtered.txt"
-  cargo run --bin sample-fastq 10000 $arg $arg"_filtered.txt" --skip-quals --skip-header --skip-mid
-  cargo run --bin extract-comp $arg"_filtered.txt" $arg"_filtered_json.txt"    
+  cargo run --bin extract-fastq-comp 10000 $arg $arg"comp.json" 
 done

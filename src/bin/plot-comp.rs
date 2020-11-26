@@ -14,12 +14,8 @@ use plotters::prelude::*;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "Plot base composition", about = "Plots base composition of given JSON file")]
 pub struct Cli {
-    #[structopt(short = "I", long = "stdin")]
-    /// Toggle stdin input
-    stdin: bool,
-
-    #[structopt(parse(from_os_str), required_unless("stdin"))]
-    pub input: Option<PathBuf>,
+    #[structopt(parse(from_os_str))]
+    pub input: PathBuf,
     /// Other files of library for comparison
     #[structopt(short = "l", parse(from_os_str))]
     pub libs: Option<Vec<PathBuf>>,
@@ -123,14 +119,14 @@ mod data_transforms {
 
 use io_utils::get_reader;
 use data_transforms::*;
-pub fn run <R>(mut reader: R, libs: Option<Vec<PathBuf>>) -> Result<(), Box<dyn std::error::Error>>
+pub fn run <R>(mut reader: R, libs: Option<Vec<PathBuf>>, out_path: &PathBuf) -> Result<(), Box<dyn std::error::Error>>
 where
     R: BufRead,
 {
     let (x_len, comp) = read_comp_file(&mut reader);
 
     //Set up plotting logic
-    let root = BitMapBackend::new("out.png", (1024, 768)).into_drawing_area();
+    let root = BitMapBackend::new(out_path, (1024, 768)).into_drawing_area();
     root.fill(&WHITE)?;
     let mut chart = ChartBuilder::on(&root)
         // Set the caption of the chart
@@ -233,12 +229,23 @@ where
 }
 
 use simple_logger::SimpleLogger;
+use std::ffi::OsString;
 
 fn main() {
     //Set up logger.
     SimpleLogger::new().init().unwrap();
 
     let args = Cli::from_args();
+    let mut out_path: PathBuf = PathBuf::from(&args.input);
+    let mut file_name = OsString::from(
+        match out_path.file_stem() {
+            Some(n) => n,
+            None => panic!("Improper path provided"),
+        }
+    );
+    file_name.push("_comp.png");
 
-    run(io_utils::get_reader(&args.input), args.libs).expect("Error drawing chart");
+    out_path.set_file_name (file_name);
+
+    run(io_utils::get_reader(&Some(args.input)), args.libs, &out_path).expect("Error drawing chart");
 }
