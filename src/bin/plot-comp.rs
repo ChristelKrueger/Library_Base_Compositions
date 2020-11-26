@@ -236,6 +236,8 @@ fn main() {
     SimpleLogger::new().init().unwrap();
 
     let args = Cli::from_args();
+
+    // Output file logic
     let mut out_path: PathBuf = PathBuf::from(&args.input);
     let mut file_name = OsString::from(
         match out_path.file_stem() {
