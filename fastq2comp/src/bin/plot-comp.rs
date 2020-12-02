@@ -119,15 +119,18 @@ mod data_transforms {
 
 use io_utils::get_reader;
 use data_transforms::*;
-pub fn run <R>(mut reader: R, libs: Option<Vec<PathBuf>>, out_path: &PathBuf) -> Result<(), Box<dyn std::error::Error>>
+use plotters_backend::DrawingBackend;
+
+pub fn run <R, B>(mut reader: R, libs: Option<Vec<PathBuf>>, backend: B) -> Result<(), Box<dyn std::error::Error>>
 where
     R: BufRead,
+    B: DrawingBackend,
 {
     let (x_len, comp) = read_comp_file(&mut reader);
 
     //Set up plotting logic
-    let root = BitMapBackend::new(out_path, (1024, 768)).into_drawing_area();
-    root.fill(&WHITE)?;
+    let root = backend.into_drawing_area();
+    root.fill(&WHITE).expect("Error drawing chart.");
     let mut chart = ChartBuilder::on(&root)
         // Set the caption of the chart
         .caption("Percentage", ("sans-serif", 40).into_font())
@@ -136,13 +139,13 @@ where
         .y_label_area_size(30)
         .margin(30)
         // Finally attach a coordinate on the drawing area and make a chart context
-        .build_cartesian_2d(1usize..x_len, 0usize..100usize)?;
+        .build_cartesian_2d(1usize..x_len, 0usize..100usize).expect("Error drawing chart.");
 
     chart.configure_mesh()
         .x_desc("Base number")
         .y_desc("Occurences")
         .axis_desc_style(("sans-serif", 15))
-        .draw()?;
+        .draw().expect("Error drawing chart.");
 
     //Draw bases
     //To customize colors, use ```&RGBColor(0, 0, 0)``` inplace of ```&MAGENTA```, etc.
@@ -163,7 +166,7 @@ where
             .draw_series(LineSeries::new(
                 comp.iter().map(|r| (r.pos, i.1(r))),
                 i.0.0,
-            ))?
+            )).expect("Error drawing chart.")
             .label(i.0.1)
             .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], i.0.0));
     }
@@ -215,7 +218,7 @@ where
                                 None
                             }
                         })                            
-                )?;
+                ).expect("Error drawing chart.");
         }
     }
 
@@ -223,7 +226,7 @@ where
         .configure_series_labels()
         .background_style(&WHITE.mix(0.8))
         .border_style(&BLACK)
-        .draw()?;
+        .draw().expect("Error drawing chart.");
 
     Ok(())
 }
@@ -249,5 +252,5 @@ fn main() {
 
     out_path.set_file_name (file_name);
 
-    run(io_utils::get_reader(&Some(args.input)), args.libs, &out_path).expect("Error drawing chart");
+    run(io_utils::get_reader(&Some(args.input)), args.libs, BitMapBackend::new(&out_path, (1280, 700))).expect("Error drawing chart");
 }
