@@ -3,6 +3,7 @@ pub mod test_utils {
     /// Returns reader which implements Read trait.
     /// - `s`: Data which should be yielded by the reader upon read
     pub fn return_reader<'a> (s: &'a[u8]) -> Cursor<&[u8]> {
+        
         Cursor::new(s)
     }
 
