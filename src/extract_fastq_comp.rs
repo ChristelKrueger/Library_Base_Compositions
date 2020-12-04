@@ -1,8 +1,7 @@
 use std::path::PathBuf;
-use std::io::{BufRead};
+use std::io::BufRead;
 
-use fastq2comp::io_utils;
-use fastq2comp::BaseComp;
+use crate::BaseComp;
 
 #[cfg(tests)]
 mod sample_fastq_tests {
@@ -65,7 +64,7 @@ mod sample_fastq_tests {
 use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "extract FASTQ base composition", about = "Extracts base composition of FASTQ file and returns result in JSON.")]
-struct Cli {
+pub struct Cli {
     /// Input file, stdin if not present
     #[structopt(parse(from_os_str), required_unless("stdin"))]
     pub input: Option<PathBuf>,
@@ -83,24 +82,24 @@ struct Cli {
     stdout: bool,
 
     #[structopt(flatten)]
-    sample_args: SampleArgs,
+    pub sample_args: SampleArgs,
 }
 
 #[derive(Debug, StructOpt)]
-struct SampleArgs {
+pub struct SampleArgs {
     /// Target sample count
     #[structopt()]
-    target_read_count: u64,
+    pub target_read_count: u64,
 
     /// Sets minimum average quality allowed in sampled reads.
     #[structopt(short = "m", long = "min", default_value="0")]
-    min_phred_score: usize,
+    pub min_phred_score: usize,
     /// Sets maximum amount of N's allowed in sample reads.
     #[structopt(short = "n", long = "n-content")]
-    n_content: Option<usize>,
+    pub n_content: Option<usize>,
     /// Trims each sampled read to given length.
     #[structopt(short = "t", long = "trim")]
-    trimmed_length: Option<usize>,
+    pub trimmed_length: Option<usize>,
 }
 
 use regex::Regex;
@@ -197,9 +196,7 @@ impl FASTQRead {
     }
 }
 
-use simple_logger::SimpleLogger;
-
-fn run<R> (args: SampleArgs, mut reader: R) -> String
+pub fn run<R> (args: SampleArgs, mut reader: R) -> String
 where R: BufRead {
     let mut read = FASTQRead::new(0);
     read.read(&mut reader);
@@ -228,19 +225,4 @@ where R: BufRead {
     }
 
     base_comp.jsonify()
-}
-
-fn main() {
-    //Set up logger.
-    SimpleLogger::new().init().unwrap();
-
-    let args = Cli::from_args();
-    //Program starts.
-
-    let mut writer = io_utils::get_writer(&args.output);
-    let mut reader = io_utils::get_reader(&args.input);
-
-    info!("Arguments recieved: {:#?}", args);
-
-    writeln!(writer, "{}", run(args.sample_args, &mut reader)).expect("Problem printing result");
 }

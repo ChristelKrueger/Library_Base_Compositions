@@ -1,3 +1,6 @@
+pub mod extract_fastq_comp;
+pub mod plot_comp;
+
 pub mod test_utils {
     use std::io::Cursor;
     /// Returns reader which implements Read trait.
