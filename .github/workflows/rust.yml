@@ -1,0 +1,47 @@
+name: Rust
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: cargo build --verbose
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Run tests
+      run: cargo test --verbose
+      
+  run-examples:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Run extract-comp
+      run: cargo run --examples extract-comp
+    - name: Run plot-comp
+      run: cargo run --examples plot-comp
+      
+    - name: Archive extract-comp output
+      uses: actions/upload-artifact@v2
+      with: 
+        name: extract-comp-out
+        path: examples/extract-comp/out.json
+    - name: Archive plot-comp output
+      uses: actions/upload-artifact@v2
+      with: 
+        name: plot-comp-out
+        path: examples/plot-comp/out.png
