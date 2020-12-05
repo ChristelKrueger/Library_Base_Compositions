@@ -42,7 +42,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - run: cargo run --example extract-fastq
+      - run: cargo run --example extract-comp
       - run: cargo run --example plot-comp
       
       - name: Archive extract-comp output
