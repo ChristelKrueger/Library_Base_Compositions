@@ -13,37 +13,45 @@ env:
 
 jobs:
   build:
+    name: Build project
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --verbose
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - run: cargo build --release
   test:
+    name: Run unit tests
     needs: build
     runs-on: ubuntu-latest
     
     steps:
-    - name: Run tests
-      run: cargo test --verbose
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - run: cargo test
       
   run-examples:
     needs: test
     runs-on: ubuntu-latest
     
     steps:
-    - name: Run extract-comp
-      run: cargo run --examples extract-comp
-    - name: Run plot-comp
-      run: cargo run --examples plot-comp
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - run: cargo run --example extract-fastq
+      - run: cargo run --example plot-comp
       
-    - name: Archive extract-comp output
-      uses: actions/upload-artifact@v2
-      with: 
-        name: extract-comp-out
-        path: examples/extract-comp/out.json
-    - name: Archive plot-comp output
-      uses: actions/upload-artifact@v2
-      with: 
-        name: plot-comp-out
-        path: examples/plot-comp/out.png
+      - name: Archive extract-comp output
+        uses: actions/upload-artifact@v2
+        with: 
+          name: extract-comp-out
+          path: examples/extract-comp/out.json
+      - name: Archive plot-comp output
+        uses: actions/upload-artifact@v2
+        with: 
+          name: plot-comp-out
+          path: examples/plot-comp/out.png
