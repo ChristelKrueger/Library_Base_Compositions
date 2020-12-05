@@ -3,34 +3,25 @@ use std::io::BufRead;
 
 use crate::BaseComp;
 
-#[cfg(tests)]
+#[cfg(test)]
 mod sample_fastq_tests {
     use super::*;
-    use test_utils;
+    use crate::test_utils::*;
 
     #[test]
     fn test_sample() {
-        let reader = test_utils::return_reader(b"@\nAAA\n+\n~~~");
-        let mut writer = test_utils::return_writer();
+        let reader = return_reader(b"@\nAAA\n+\n~~~");
+        
+        assert_eq!(
+            run(SampleArgs {
+                target_read_count: 1u64,
+                min_phred_score: 0,
+                n_content: None,
+                trimmed_length: Some(2),
+            }, reader),
 
-        run(reader, &mut writer, Cli {
-            target_read_count: 1u64,
-            input: None,
-            output: None,
-            stdin: false,
-            stdout: false,
-            header: false,
-            seq: false,
-            mid: false,
-            quals: false,
-            min_phred_score: 0,
-            n_content: None,
-            trimmed_length: Some(2),
-        });
-
-        let stringified = writer.get_ref()[0..].to_vec();
-        assert_eq!(std::str::from_utf8(&stringified).unwrap().to_string(),
-        std::str::from_utf8(b"@\nAA\n+\n~~").unwrap());
+            std::str::from_utf8(b"@\nAA\n+\n~~").unwrap()
+        );
     }
 
     #[test]
@@ -65,14 +56,6 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "extract FASTQ base composition", about = "Extracts base composition of FASTQ file and returns result in JSON.")]
 pub struct Cli {
-    /// Input file, stdin if not present
-    #[structopt(parse(from_os_str), required_unless("stdin"))]
-    pub input: Option<PathBuf>,
-
-    /// Output file, use flag -Z to get output to stdout instead
-    #[structopt(parse(from_os_str), required_unless("stdout"))]
-    pub output: Option<PathBuf>,
-
     /// Toggles stdin input.
     #[structopt(short = "I", long = "stdin")]
     stdin: bool,
@@ -83,6 +66,14 @@ pub struct Cli {
 
     #[structopt(flatten)]
     pub sample_args: SampleArgs,
+
+    /// Input file, stdin if not present
+    #[structopt(parse(from_os_str), required_unless("stdin"))]
+    pub input: Option<PathBuf>,
+
+    /// Output file, use flag -Z to get output to stdout instead
+    #[structopt(parse(from_os_str), required_unless("stdout"))]
+    pub output: Option<PathBuf>,
 }
 
 #[derive(Debug, StructOpt)]
@@ -198,6 +189,7 @@ impl FASTQRead {
 
 pub fn run<R> (args: SampleArgs, mut reader: R) -> String
 where R: BufRead {
+    // Initial read to help figure out line size for pre-optimization of allocs
     let mut read = FASTQRead::new(0);
     read.read(&mut reader);
 
@@ -212,6 +204,7 @@ where R: BufRead {
     let mut valid_seqs: u64 = 0;
 
     while valid_seqs <= args.target_read_count {
+        // We check read first since we do an initial read for figuring out line sizes
         if FASTQRead::check_read(&mut read, &args) {
             base_comp.extract(&read.seq);
             valid_seqs += 1;
