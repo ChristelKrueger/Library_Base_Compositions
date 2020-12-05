@@ -2,11 +2,10 @@ name: Rust
 
 on:
   push:
-    branches: [ master ]
-    paths: [ examples/**, src/**, Cargo.toml ]
+    paths: [ examples/**, src/**, Cargo.toml, .github/workflows ]
   pull_request:
     branches: [ master ]
-    paths: [ examples/**, src/**, Cargo.toml ]
+    paths: [ examples/**, src/**, Cargo.toml, .github/workflows ]
 
 env:
   CARGO_TERM_COLOR: always
