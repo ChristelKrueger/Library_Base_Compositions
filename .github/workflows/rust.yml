@@ -3,8 +3,10 @@ name: Rust
 on:
   push:
     branches: [ master ]
+    paths: [ examples/**, src/**, Cargo.toml ]
   pull_request:
     branches: [ master ]
+    paths: [ examples/**, src/**, Cargo.toml ]
 
 env:
   CARGO_TERM_COLOR: always
