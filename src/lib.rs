@@ -207,12 +207,12 @@ impl BaseCompCol {
             b'G' => self.bases.G += 1,
             b'C' => self.bases.C += 1,
             b'N' => self.bases.N += 1,
-            _ => panic!("Invalid character {:?} == {:?} found in read", *s, s.to_ascii_lowercase())
+            _ => panic!("Invalid character {:?} == {:?} found in read", *s as char, s.to_ascii_lowercase())
         }            
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct BaseComp {
     pub lib: Vec<BaseCompCol>,
     pub len: usize,
@@ -229,8 +229,8 @@ impl BaseComp {
     }
 
     pub fn extract (&mut self, s: &str) {
-        for c in s.as_bytes().iter().zip(0..s.len()) {
-            self.lib[c.1].extract(c.0);
+        for c in s.as_bytes().iter().enumerate() {
+            self.lib[c.0].extract(c.1);
         }
     }
 

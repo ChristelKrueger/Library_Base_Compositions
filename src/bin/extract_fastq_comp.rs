@@ -17,5 +17,5 @@ fn main() {
 
     info!("Arguments recieved: {:#?}", args);
 
-    writeln!(writer, "{}", run(args.sample_args, &mut reader)).expect("Problem printing result");
+    writeln!(writer, "sss: {}", run(args.sample_args, &mut reader)).expect("Problem printing result");
 }

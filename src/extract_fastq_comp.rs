@@ -67,7 +67,7 @@ pub struct Cli {
     #[structopt(flatten)]
     pub sample_args: SampleArgs,
 
-    /// Input file, stdin if not present
+    /// Input file, use flag -I to get output to stdout instead
     #[structopt(parse(from_os_str), required_unless("stdin"))]
     pub input: Option<PathBuf>,
 
@@ -108,18 +108,19 @@ impl FASTQRead {
     /// Reads a complete FASTQ statement (composed of 4 lines) into itself
     /// - `reader`: Object implementing `std::io::BufRead` from which to read lines
     /// Note: Will terminate program if EOF reached
-    pub fn read<R> (&mut self, reader: &mut R)
+    pub fn read<R> (&mut self, reader: &mut R) -> Option<()>
     where
         R: BufRead
     {
 
         //Skips the 1st and 3rd line resp. in 4 lines of input
         for s in [&mut self.seq, &mut self.quals].iter_mut() {
-            **s = match reader.lines().skip(1).next() {
+            **s = match reader.lines().nth(1) {
                 Some(n) => n.expect("Error reading line. Make sure UTF-8 input is supported"),
-                None => std::process::exit(0),
+                None => {debug!("Input reading finished"); return None},
             }
         }
+        Some(())
     }
 
     pub fn new (len: usize) -> FASTQRead {
@@ -209,9 +210,9 @@ where R: BufRead {
             base_comp.extract(&read.seq);
             valid_seqs += 1;
         }
-        read.read(&mut reader);
+        if let None = read.read(&mut reader) {break}
     }
-    info!("Found enough sequences\n");
+    info!("Found {} sequences\n", valid_seqs);
 
     for r in base_comp.lib.iter_mut() {
         r.bases.percentage();
