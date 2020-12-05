@@ -25,6 +25,4 @@ fn main() {
         Err(why) => panic!("couldn't write to output JSON file: {}", why),
         Ok(_) => println!("successfully wrote to output JSON file"),
     }
-
-    println!("sss{}", result);
 }
