@@ -5,9 +5,9 @@ use plotters::prelude::BitMapBackend;
 
 fn main() {
     run(
-        io_utils::get_reader(&Some(PathBuf::from("sample_in.json"))),
+        io_utils::get_reader(&Some(PathBuf::from("examples/plot-comp/in.json"))),
         None,
-        BitMapBackend::new(&PathBuf::from("sample_out.png"),
+        BitMapBackend::new(&PathBuf::from("examples/plot-comp/out.png"),
         (1280, 700))
     ).expect("Error drawing chart");
 }
