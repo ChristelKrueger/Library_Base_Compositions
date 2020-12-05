@@ -9,7 +9,7 @@ mod sample_fastq_tests {
     use crate::test_utils::*;
 
     #[test]
-    fn test_sample() {
+    fn test_run() {
         let reader = return_reader(b"@\nAAA\n+\n~~~");
         
         assert_eq!(
@@ -20,7 +20,7 @@ mod sample_fastq_tests {
                 trimmed_length: Some(2),
             }, reader),
 
-            std::str::from_utf8(b"@\nAA\n+\n~~").unwrap()
+            std::str::from_utf8(b"{\"lib\":[{\"pos\":1,\"bases\":{\"A\":100,\"T\":0,\"G\":0,\"C\":0,\"N\":0}},{\"pos\":2,\"bases\":{\"A\":100,\"T\":0,\"G\":0,\"C\":0,\"N\":0}}],\"len\":2}").unwrap()
         );
     }
 
