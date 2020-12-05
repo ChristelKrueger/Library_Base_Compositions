@@ -2,7 +2,7 @@ name: Rust
 
 on:
   push:
-    paths: [ examples/**, src/**, Cargo.toml, .github/workflows ]
+    paths: [ examples/**, src/**, Cargo.toml, .github/workflows/** ]
   pull_request:
     branches: [ master ]
     paths: [ examples/**, src/**, Cargo.toml, .github/workflows ]
