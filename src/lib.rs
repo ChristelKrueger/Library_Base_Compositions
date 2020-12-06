@@ -1,4 +1,4 @@
-pub mod extract_fastq_comp;
+pub mod extract_comp;
 pub mod plot_comp;
 
 pub mod test_utils {
