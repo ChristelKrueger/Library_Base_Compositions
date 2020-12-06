@@ -26,4 +26,5 @@ fn main() {
     out_path.set_file_name (file_name);
 
     run(io_utils::get_reader(&Some(args.input)), args.libs, BitMapBackend::new(&out_path, (1280, 700))).expect("Error drawing chart");
+    eprintln!("Chart plotted at: {:#?}", &out_path);
 }

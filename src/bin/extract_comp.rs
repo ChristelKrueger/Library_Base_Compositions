@@ -1,4 +1,4 @@
-use fastq2comp::extract_fastq_comp::{Cli, run};
+use fastq2comp::extract_comp::{Cli, run};
 use fastq2comp::io_utils;
 
 use log::info;
@@ -17,5 +17,8 @@ fn main() {
 
     info!("Arguments recieved: {:#?}", args);
 
-    writeln!(writer, "sss: {}", run(args.sample_args, &mut reader)).expect("Problem printing result");
+    let (result, seqs) = run(args.sample_args, &mut reader);
+
+    writeln!(writer, "{}", result).expect("Problem printing result");
+    eprintln!("Extracted base composition of {} reads.", seqs);
 }

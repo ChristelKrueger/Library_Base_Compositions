@@ -1,4 +1,4 @@
-use fastq2comp::extract_fastq_comp::{SampleArgs, run};
+use fastq2comp::extract_comp::{SampleArgs, run};
 use fastq2comp::io_utils;
 use std::{path::PathBuf, io::Write};
 use std::fs::File;
@@ -19,7 +19,7 @@ fn main() {
         target_read_count: 10,
         min_phred_score: 0,
         n_content: None
-    }, &mut reader);
+    }, &mut reader).0;
 
     match file.write_all(result.as_bytes()) {
         Err(why) => panic!("couldn't write to output JSON file: {}", why),

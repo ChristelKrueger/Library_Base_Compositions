@@ -11,17 +11,18 @@ mod sample_fastq_tests {
     #[test]
     fn test_run() {
         let reader = return_reader(b"@\nAAA\n+\n~~~");
-        
-        assert_eq!(
-            run(SampleArgs {
-                target_read_count: 1u64,
-                min_phred_score: 0,
-                n_content: None,
-                trimmed_length: Some(2),
-            }, reader),
+        let (result, seqs) = run(SampleArgs {
+            target_read_count: 1u64,
+            min_phred_score: 0,
+            n_content: None,
+            trimmed_length: Some(2),
+        }, reader);
 
+        assert_eq!(
+            result,
             std::str::from_utf8(b"{\"lib\":[{\"pos\":1,\"bases\":{\"A\":100,\"T\":0,\"G\":0,\"C\":0,\"N\":0}},{\"pos\":2,\"bases\":{\"A\":100,\"T\":0,\"G\":0,\"C\":0,\"N\":0}}],\"len\":2}").unwrap()
         );
+        assert_eq!(seqs, 1);
     }
 
     #[test]
@@ -188,7 +189,9 @@ impl FASTQRead {
     }
 }
 
-pub fn run<R> (args: SampleArgs, mut reader: R) -> String
+/// Takes in reader and SampleArgs, returns JSONified string and
+/// total number of reads processed after applying SampleArgs.
+pub fn run<R> (args: SampleArgs, mut reader: R) -> (String, u64)
 where R: BufRead {
     // Initial read to help figure out line size for pre-optimization of allocs
     let mut read = FASTQRead::new(0);
@@ -212,11 +215,10 @@ where R: BufRead {
         }
         if let None = read.read(&mut reader) {break}
     }
-    info!("Found {} sequences\n", valid_seqs);
 
     for r in base_comp.lib.iter_mut() {
         r.bases.percentage();
     }
 
-    base_comp.jsonify()
+    (base_comp.jsonify(), valid_seqs)
 }
