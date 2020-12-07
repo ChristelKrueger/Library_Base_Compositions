@@ -106,6 +106,7 @@ struct FASTQRead {
 
 use log::{debug, info};
 impl FASTQRead {
+
     /// Reads a complete FASTQ statement (composed of 4 lines) into itself
     /// - `reader`: Object implementing `std::io::BufRead` from which to read lines
     /// Note: Will terminate program if EOF reached
@@ -189,7 +190,7 @@ impl FASTQRead {
     }
 }
 
-/// Takes in reader and SampleArgs, returns JSONified string and
+/// Takes in reader (for FASTQ lines) and SampleArgs, returns JSONified string and
 /// total number of reads processed after applying SampleArgs.
 pub fn run<R> (args: SampleArgs, mut reader: R) -> (String, u64)
 where R: BufRead {

@@ -149,7 +149,7 @@ where
 
     //Draw bases
     //To customize colors, use ```&RGBColor(0, 0, 0)``` inplace of ```&MAGENTA```, etc.
-    for i in [
+    for ((color, name), base) in [
         (&MAGENTA, "Base A"),
         (&BLUE, "Base T"),
         (&GREEN, "Base G"),
@@ -164,11 +164,11 @@ where
     ].iter()) {
         chart
             .draw_series(LineSeries::new(
-                comp.iter().map(|r| (r.pos, i.1(r))),
-                i.0.0,
+                comp.iter().map(|r| (r.pos, base(r))),
+                *color,
             )).expect("Error drawing chart.")
-            .label(i.0.1)
-            .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], i.0.0));
+            .label(*name)
+            .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], *color));
     }
 
     if let Some(libs) = libs {
@@ -177,7 +177,7 @@ where
             .map(|mut x| read_comp_file(&mut x).1)
             .collect();
 
-        for i in [
+        for (color, base) in [
             &MAGENTA,
             &BLUE,
             &GREEN,
@@ -195,8 +195,8 @@ where
                     (0..x_len)
                         .filter_map(|pos| {
                             let mean = calc_mean(&libs, pos);
-                            let sd = i.1(&calc_sd(&libs, mean, pos));
-                            let mean = i.1(&mean);
+                            let sd = base(&calc_sd(&libs, mean, pos));
+                            let mean = base(&mean);
 
                             // Logic to prevent overflows
                             // Negative results may be produced due to rounding-off
@@ -211,7 +211,7 @@ where
                                     lower,
                                     mean,
                                     upper,
-                                    (&i.0.mix(0.2)).filled(),
+                                    (&color.mix(0.2)).filled(),
                                     5
                                 ))
                             } else {

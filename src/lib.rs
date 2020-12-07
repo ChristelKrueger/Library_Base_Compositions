@@ -210,6 +210,8 @@ impl BaseCompCol {
             _ => panic!("Invalid character {:?} == {:?} found in read", *s as char, s.to_ascii_lowercase())
         }            
     }
+
+    
 }
 
 #[derive(Serialize, Deserialize, Debug)]
