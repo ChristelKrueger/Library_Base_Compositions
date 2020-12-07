@@ -115,6 +115,8 @@ impl FASTQRead {
         R: BufRead
     {
 
+        let (seq_len, quals_len) = (self.seq.len(), self.quals.len());
+
         //Skips the 1st and 3rd line resp. in 4 lines of input
         for s in [&mut self.seq, &mut self.quals].iter_mut() {
             **s = match reader.lines().nth(1) {
@@ -122,6 +124,11 @@ impl FASTQRead {
                 None => {debug!("Input reading finished"); return None},
             }
         }
+
+        if seq_len != self.seq.len() || quals_len != self.quals.len() {
+            panic!("Reads have inconsistent lengths. Particularly this read: {}\n{}", self.seq, self.quals);
+        }
+
         Some(())
     }
 
