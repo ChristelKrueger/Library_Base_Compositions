@@ -109,14 +109,8 @@ impl FASTQRead {
 
     /// Reads a complete FASTQ statement (composed of 4 lines) into itself
     /// - `reader`: Object implementing `std::io::BufRead` from which to read lines
-    /// Note: Will terminate program if EOF reached
-    pub fn read<R> (&mut self, reader: &mut R) -> Option<()>
-    where
-        R: BufRead
-    {
-
-        let (seq_len, quals_len) = (self.seq.len(), self.quals.len());
-
+    /// - Returns `None` if EOF reached.
+    fn read_fastq (&mut self, reader: &mut impl BufRead) -> Option<()> {
         //Skips the 1st and 3rd line resp. in 4 lines of input
         for s in [&mut self.seq, &mut self.quals].iter_mut() {
             **s = match reader.lines().nth(1) {
@@ -125,14 +119,32 @@ impl FASTQRead {
             }
         }
 
-        if seq_len != self.seq.len() || quals_len != self.quals.len() {
-            panic!("Reads have inconsistent lengths. Particularly this read: {}\n{}", self.seq, self.quals);
-        }
-
         Some(())
     }
 
-    pub fn new (len: usize) -> FASTQRead {
+    /// Reads a complete FASTQ statement (composed of 4 lines) into itself.
+    /// - *Important*: Panics if read length of strings is not same as strings read before.
+    /// - `reader`: Object implementing `std::io::BufRead` from which to read lines
+    /// - Returns `None` if EOF reached.
+    fn read (&mut self, reader: &mut impl BufRead) -> Option<()>
+    {
+        let (seq_len, quals_len) = (self.seq.len(), self.quals.len());
+        
+        // If there have been no reads, then perform first read without checking for lengths
+        if seq_len == 0 || quals_len == 0 {
+            return self.read_fastq(reader);
+        }
+
+        let result = self.read_fastq(reader);
+
+        if seq_len != self.seq.len() || quals_len != self.quals.len() {
+            panic!("Reads have inconsistent lengths. Particularly this read: \n{}\n{}", self.seq, self.quals);
+        }
+
+        result
+    }
+
+    fn new (len: usize) -> FASTQRead {
         FASTQRead {
             seq: String::with_capacity(len),
             quals: String::with_capacity(len),
@@ -141,7 +153,7 @@ impl FASTQRead {
         }
     }
 
-    pub fn len (&self) -> usize {
+    fn len (&self) -> usize {
         self.seq.len()
     }
 
@@ -199,10 +211,12 @@ impl FASTQRead {
 
 /// Takes in reader (for FASTQ lines) and SampleArgs, returns JSONified string and
 /// total number of reads processed after applying SampleArgs.
-pub fn run<R> (args: SampleArgs, mut reader: R) -> (String, u64)
-where R: BufRead {
+pub fn run (args: SampleArgs, mut reader: impl BufRead) -> (String, u64) {
     // Initial read to help figure out line size for pre-optimization of allocs
-    let mut read = FASTQRead::new(0);
+    let mut read = FASTQRead::new(match args.trimmed_length {
+        Some(n) => n,
+        None => 0,
+    });
     read.read(&mut reader);
 
     // Figure out allotment size based on line size, or provided trim len
