@@ -31,25 +31,21 @@ mod sample_fastq_tests {
         let mut reader = return_reader(b"@\nAT1CGN\n+\n!!!!!!");
         read.read(&mut reader);
 
-        assert!(read.check_colorspace())
+        assert!(read.check_colorspace("AT1CGN"))
     }
 
     #[test]
     fn test_count_n() {
         let mut read = FASTQRead::new(6);
-        let mut reader = return_reader(b"@\nNNANNA\n+\n!!!!!!");
+        let mut reader = return_reader(b"@\n\n+\n!!!!!!");
         read.read(&mut reader);
 
-        assert_eq!(read.count_n(), 4)
+        assert_eq!(FASTQRead::count_n("NNANNA"), 4)
     }
 
     #[test]
     fn test_get_average_quality() {
-        let mut read = FASTQRead::new(6);
-        let mut reader = return_reader(b"@\nNNANNA\n+\n!\"#{|}");
-        read.read(&mut reader);
-
-        assert_eq!(read.get_average_quality(), 46)
+        assert_eq!(FASTQRead::get_average_quality("#{|}"), 68)
     }
 }
 
@@ -130,15 +126,16 @@ impl FASTQRead {
     {
         let (seq_len, quals_len) = (self.seq.len(), self.quals.len());
         
-        // If there have been no reads, then perform first read without checking for lengths
-        if seq_len == 0 || quals_len == 0 {
-            return self.read_fastq(reader);
-        }
-
         let result = self.read_fastq(reader);
 
+        // If there have been no reads, then perform first read without checking for lengths
+        if seq_len == 0 || quals_len == 0 {
+            return result;
+        }
+
         if seq_len != self.seq.len() || quals_len != self.quals.len() {
-            panic!("Reads have inconsistent lengths. Particularly this read: \n{}\n{}", self.seq, self.quals);
+            panic!("Reads have inconsistent lengths. Particularly this read: \n{}\n{}\n \
+            Expected read to be: {} length but it was: {} length", self.seq, self.quals, seq_len, self.seq.len());
         }
 
         result
@@ -157,50 +154,50 @@ impl FASTQRead {
         self.seq.len()
     }
 
-    fn trim(&mut self, len: usize) {
-        for s in [&mut self.seq, &mut self.quals].iter_mut() {
-            s.truncate(len);
-        }
-    }
-
-    fn count_n(&self) -> usize {
-        self.seq.matches("N").count()
+    fn count_n(seq: &str) -> usize {
+        seq.matches("N").count()
     }
 
     // Returns true if number is found in seq
-    fn check_colorspace(&self) -> bool {
-        self.seq_colorspace_checker.is_match(&self.seq)
+    fn check_colorspace(&self, seq: &str) -> bool {
+        self.seq_colorspace_checker.is_match(seq)
     }
 
-    fn get_average_quality(&self) -> usize {
+    fn get_average_quality(quals: &str) -> usize {
         let mut qual_sum: usize = 0;
-        for char in self.quals.as_bytes() {
+        for char in quals.as_bytes() {
             qual_sum += (*char as usize) - 33;
         }
 
-        qual_sum / self.quals.len()
+        qual_sum / quals.len()
     }
 
-    fn check_read(read: &mut FASTQRead, args: &SampleArgs) -> bool {
-        if let Some(n) = args.trimmed_length {
-            read.trim(n);
-        };
+    fn trim(str: &str, len: Option<usize>) -> &str {
+        match len {
+            Some(n) => &str[0..n],
+            None => &str[0..],
+        }
+    }
+
+    fn check_read(&mut self, args: &SampleArgs) -> bool {
+        let seq = FASTQRead::trim(&self.seq, args.trimmed_length);
+        let quals = FASTQRead::trim(&self.seq, args.trimmed_length);
 
         // Check for numbers in reads
-        if read.check_colorspace() {
+        if self.check_colorspace(seq) {
             info!("Found numbers in reads - this is probably colorspace");
             std::process::exit(0);
         }
 
         // Count the N's
         if let Some(n) = args.n_content {
-            if read.count_n() > n {
-                debug!("N count of current line ({}) too high - skipping", read.count_n());
+            if FASTQRead::count_n(seq) > n {
+                debug!("N count of current line ({}) too high - skipping", FASTQRead::count_n(seq));
                 return false;
             }
         }
 
-        if read.get_average_quality() < args.min_phred_score {
+        if FASTQRead::get_average_quality(quals) < args.min_phred_score {
             debug!("Quality too low - skipping");
             return false;
         }
@@ -219,20 +216,20 @@ pub fn run (args: SampleArgs, mut reader: impl BufRead) -> (String, u64) {
     });
     read.read(&mut reader);
 
+    let seq_len = match args.trimmed_length {
+        Some(n) => n,
+        None => read.len()
+    };
+
     // Figure out allotment size based on line size, or provided trim len
-    let mut base_comp = BaseComp::init(
-        match args.trimmed_length {
-            Some(n) => n,
-            None => read.len()
-        }
-    );
+    let mut base_comp = BaseComp::init(seq_len);
 
     let mut valid_seqs: u64 = 0;
 
     while valid_seqs <= args.target_read_count {
         // We check read first since we do an initial read for figuring out line sizes
         if FASTQRead::check_read(&mut read, &args) {
-            base_comp.extract(&read.seq);
+            base_comp.extract(FASTQRead::trim(&read.seq, args.trimmed_length));
             valid_seqs += 1;
         }
         if let None = read.read(&mut reader) {break}
