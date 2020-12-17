@@ -241,3 +241,53 @@ pub fn run (args: SampleArgs, mut reader: impl BufRead) -> (String, u64) {
 
     (base_comp.jsonify(), valid_seqs)
 }
+
+mod distributed_fastq_reader
+{
+    use std::io::BufRead;
+    use super::{FASTQRead, SampleArgs};
+    struct FASTQReader<T: BufRead> {
+        curr: FASTQRead,
+        reader: T,
+        sample_args: SampleArgs,
+    }
+
+    impl<T: BufRead> FASTQReader<T> {
+        fn new (args: SampleArgs, mut reader: T) -> FASTQReader<T> {
+            let mut read = FASTQRead::new(match args.trimmed_length {
+                Some(n) => n,
+                None => 0,
+            });
+            read.read(&mut reader);
+        
+            let seq_len = match args.trimmed_length {
+                Some(n) => n,
+                None => read.len()
+            };
+
+            FASTQReader {
+                curr: read,
+                reader: reader,
+                sample_args: args,
+            }
+        }
+
+        fn get_seq_len (&self) {
+            match self.sample_args.trimmed_length {
+                Some(n) => n,
+                None => self.curr.len()
+            };
+        }
+
+        // Not implemented as Iterator as it has issues with lifetimes (See: Streaming Iterators)
+        fn next<'a>(&'a mut self) -> Option<&'a FASTQRead> {
+            while !FASTQRead::check_read(&mut self.curr, &mut self.sample_args) {
+                if let None = self.curr.read(&mut self.reader) {
+                    return None
+                }
+            }
+
+            Some(&self.curr)
+        }
+    }
+}
