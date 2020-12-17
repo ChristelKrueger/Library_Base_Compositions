@@ -91,13 +91,18 @@ pub struct SampleArgs {
 }
 
 use regex::Regex;
+
+use lazy_static::lazy_static;
+lazy_static! {
+    // Regex for checking if seq has numbers
+    static ref SeqColorspaceChecker: Regex = Regex::new(r"\d").unwrap();
+}
+
 /// Abstraction for a single read of FASTQ data
 #[derive(Debug)]
 pub(crate) struct FASTQRead {
     pub seq: String,
     quals: String,
-    // Regex for checking if seq has colorspace
-    seq_colorspace_checker: Regex,
 }
 
 use log::{debug, info};
@@ -145,8 +150,6 @@ impl FASTQRead {
         FASTQRead {
             seq: String::with_capacity(len),
             quals: String::with_capacity(len),
-
-            seq_colorspace_checker: Regex::new(r"\d").unwrap()
         }
     }
 
@@ -160,7 +163,7 @@ impl FASTQRead {
 
     // Returns true if number is found in seq
     fn check_colorspace(&self, seq: &str) -> bool {
-        self.seq_colorspace_checker.is_match(seq)
+        SeqColorspaceChecker.is_match(seq)
     }
 
     fn get_average_quality(quals: &str) -> usize {
