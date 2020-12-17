@@ -18,7 +18,7 @@ fn main() {
         trimmed_length: Some(50),
         target_read_count: 10,
         min_phred_score: 0,
-        n_content: None
+        n_content: None,
     }, &mut reader).0;
 
     match file.write_all(result.as_bytes()) {

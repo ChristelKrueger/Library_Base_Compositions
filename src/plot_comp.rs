@@ -57,7 +57,7 @@ mod tests {
 }
 
 use std::io::BufRead;
-pub fn read_comp_file <R>(reader: &mut R) -> (usize, Vec<Read>)
+fn read_comp_file <R>(reader: &mut R) -> (usize, Vec<Read>)
 where R: BufRead {
     let mut s = String::with_capacity(500);
 
@@ -72,7 +72,7 @@ where R: BufRead {
 mod data_transforms {
     use super::*;
 
-    pub fn calc_mean (libs: &Vec<Vec<Read>>, pos: usize) -> Bases {
+    pub(crate) fn calc_mean (libs: &Vec<Vec<Read>>, pos: usize) -> Bases {
         libs.iter()
         .map(move |lib| lib[pos].bases)
         .fold( Bases::new(),
@@ -87,7 +87,7 @@ mod data_transforms {
         .collect()
     }
 
-    pub fn calc_sd (libs: &Vec<Vec<Read>>, mean: Bases, pos: usize) -> Bases {
+    pub(crate) fn calc_sd (libs: &Vec<Vec<Read>>, mean: Bases, pos: usize) -> Bases {
         libs.iter()
         .map(move |lib| lib[pos].bases)
         //Get differences from mean

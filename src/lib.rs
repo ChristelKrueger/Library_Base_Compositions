@@ -61,15 +61,19 @@ pub mod io_utils {
 use serde::{Serialize, Deserialize};
 use serde_json;
 
+/// Represents a column of base composition data.
+/// Contains base composition along with position information.
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[allow(non_snake_case)]
-pub struct BaseCompCol {
+pub(crate) struct BaseCompCol {
     pub pos: usize,
     pub bases: BaseCompColBases,
 }
+
+/// Represents a column of base composition.
 #[derive(Serialize, Deserialize, PartialEq, Debug, Copy, Clone)]
 #[allow(non_snake_case)]
-pub struct BaseCompColBases {
+pub(crate) struct BaseCompColBases {
     pub A: usize,
     pub T: usize,
     pub G: usize,
@@ -77,7 +81,8 @@ pub struct BaseCompColBases {
     pub N: usize,
 }
 
-pub struct IterableBaseCompColBases {
+/// Convenience struct for iterating over base composition
+pub(crate) struct IterableBaseCompColBases {
     bases: BaseCompColBases,
     state: BaseCompColBasesIteratorState,
 }
@@ -108,7 +113,7 @@ impl From<BaseCompColBases> for IterableBaseCompColBases {
 }
 
 #[derive(Clone, Copy)]
-pub enum BaseCompColBasesIteratorState {
+pub(crate) enum BaseCompColBasesIteratorState {
     A,
     C,
     G,
@@ -214,8 +219,10 @@ impl BaseCompCol {
     
 }
 
+/// Represents the entire base composition.
+/// As a Vec of Reads, each of which hold data for a single column
 #[derive(Serialize, Deserialize, Debug)]
-pub struct BaseComp {
+pub(crate) struct BaseComp {
     pub lib: Vec<BaseCompCol>,
     pub len: usize,
 }
