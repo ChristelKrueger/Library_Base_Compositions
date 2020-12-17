@@ -95,7 +95,7 @@ use regex::Regex;
 use lazy_static::lazy_static;
 lazy_static! {
     // Regex for checking if seq has numbers
-    static ref SeqColorspaceChecker: Regex = Regex::new(r"\d").unwrap();
+    static ref SEQCOLORSPACECHECKER: Regex = Regex::new(r"\d").unwrap();
 }
 
 /// Abstraction for a single read of FASTQ data
@@ -163,7 +163,7 @@ impl FASTQRead {
 
     // Returns true if number is found in seq
     fn check_colorspace(&self, seq: &str) -> bool {
-        SeqColorspaceChecker.is_match(seq)
+        SEQCOLORSPACECHECKER.is_match(seq)
     }
 
     fn get_average_quality(quals: &str) -> usize {
