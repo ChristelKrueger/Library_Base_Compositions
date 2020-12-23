@@ -289,6 +289,7 @@ mod distributed_fastq_reader
                 return None
             }
 
+            self.curr.read(&mut self.reader);
             while !FASTQRead::check_read(&mut self.curr, &mut self.sample_args) {
                 if let None = self.curr.read(&mut self.reader) {
                     self.end = true;
