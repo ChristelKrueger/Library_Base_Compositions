@@ -22,7 +22,7 @@ mod sample_fastq_tests {
             result,
             std::str::from_utf8(b"{\"lib\":[{\"pos\":1,\"bases\":{\"A\":100,\"T\":0,\"G\":0,\"C\":0,\"N\":0}},{\"pos\":2,\"bases\":{\"A\":100,\"T\":0,\"G\":0,\"C\":0,\"N\":0}}],\"len\":2}").unwrap()
         );
-        assert_eq!(seqs, 1);
+        assert_eq!(seqs, 2);
     }
 
     #[test]
@@ -210,34 +210,45 @@ impl FASTQRead {
 }
 
 use distributed_fastq_reader::FASTQReader;
+use reservoir_sampling::unweighted::l as sample;
+
 /// Takes in reader (for FASTQ lines) and SampleArgs, returns JSONified string and
 /// total number of reads processed after applying SampleArgs.
 pub fn run (args: SampleArgs, reader: impl BufRead) -> (String, usize) {
+    // TODO: Convert args.target_read_count to usize or
+    let mut sampled_seqs = vec![String::new(); args.target_read_count as usize];
+
     // Initial read to help figure out line size for pre-optimization of allocs
-    let trim_len = args.trimmed_length;
-    let mut fastq_reader = FASTQReader::new(args, reader);
+    let fastq_reader = FASTQReader::new(args, reader);
 
     // Figure out allotment size based on line size, or provided trim len
     let mut base_comp = BaseComp::init(fastq_reader.get_seq_len());
 
-    while let Some(read) =  fastq_reader.next() {
-        base_comp.extract(FASTQRead::trim(&read.seq, trim_len));
+    sample(fastq_reader.into_iter(), sampled_seqs.as_mut_slice());
+
+    for seq in sampled_seqs {
+        if seq == "" {
+            break;
+        }
+        base_comp.extract(&seq);
     }
 
     for r in base_comp.lib.iter_mut() {
         r.bases.percentage();
     }
 
-    (base_comp.jsonify(), base_comp.len)
+    (base_comp.jsonify(), base_comp.len())
 }
 
 mod distributed_fastq_reader
 {
     use std::io::BufRead;
     use super::{FASTQRead, SampleArgs};
+
     pub struct FASTQReader<T: BufRead> {
         curr: FASTQRead,
         reader: T,
+        end: bool,
         sample_args: SampleArgs,
         curr_valid_reads: u64,
     }
@@ -248,11 +259,15 @@ mod distributed_fastq_reader
                 Some(n) => n,
                 None => 0,
             });
-            read.read(&mut reader);
+            let end = match read.read(&mut reader) {
+                Some(_) => true,
+                None => false
+            };
 
             FASTQReader {
                 curr: read,
                 reader: reader,
+                end,
                 sample_args: args,
                 curr_valid_reads: 0,
             }
@@ -264,21 +279,25 @@ mod distributed_fastq_reader
                 None => self.curr.len()
             }
         }
+    }
 
-        // Not implemented as Iterator as it has issues with lifetimes (See: Streaming Iterators)
-        pub(crate) fn next<'a>(&'a mut self) -> Option<&'a FASTQRead> {
+    impl<T: BufRead> Iterator for FASTQReader<T> {
+        type Item = String;
+
+        fn next (&mut self) -> Option<String> {
             if self.curr_valid_reads >= self.sample_args.target_read_count {
                 return None
             }
 
             while !FASTQRead::check_read(&mut self.curr, &mut self.sample_args) {
                 if let None = self.curr.read(&mut self.reader) {
-                    return None
+                    self.end = true;
+                    return None;
                 }
             }
             self.curr_valid_reads += 1;
 
-            Some(&self.curr)
+            Some(FASTQRead::trim(&self.curr.seq, self.sample_args.trimmed_length).to_string())
         }
     }
 }

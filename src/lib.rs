@@ -224,7 +224,7 @@ impl BaseCompCol {
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct BaseComp {
     pub lib: Vec<BaseCompCol>,
-    pub len: usize,
+    len: usize,
 }
 
 impl BaseComp {
@@ -237,13 +237,18 @@ impl BaseComp {
         base_comp
     }
 
+    pub fn len (&self) -> usize {
+        self.lib.len()
+    }
+
     pub fn extract (&mut self, s: &str) {
         for c in s.as_bytes().iter().enumerate() {
             self.lib[c.0].extract(c.1);
         }
     }
 
-    pub fn jsonify (&self) -> String {
+    pub fn jsonify (&mut self) -> String {
+        self.len = BaseComp::len(&self);
         serde_json::to_string(&self).expect("Error encountered JSONifying data")
     }
 }
