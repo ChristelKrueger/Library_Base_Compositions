@@ -258,10 +258,6 @@ mod distributed_fastq_reader
                 Some(n) => n,
                 None => 0,
             });
-            let end = match read.read(&mut reader) {
-                Some(_) => true,
-                None => false
-            };
 
             FASTQReader {
                 curr: read,
