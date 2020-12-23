@@ -248,7 +248,6 @@ mod distributed_fastq_reader
     pub struct FASTQReader<T: BufRead> {
         curr: FASTQRead,
         reader: T,
-        end: bool,
         sample_args: SampleArgs,
         curr_valid_reads: u64,
     }
@@ -267,7 +266,6 @@ mod distributed_fastq_reader
             FASTQReader {
                 curr: read,
                 reader: reader,
-                end,
                 sample_args: args,
                 curr_valid_reads: 0,
             }
@@ -292,7 +290,6 @@ mod distributed_fastq_reader
             self.curr.read(&mut self.reader);
             while !FASTQRead::check_read(&mut self.curr, &mut self.sample_args) {
                 if let None = self.curr.read(&mut self.reader) {
-                    self.end = true;
                     return None;
                 }
             }
