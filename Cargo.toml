@@ -17,4 +17,4 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 plotters = "0.3.*"
 plotters-backend = "0.3.*"
-reservoir-sampling = { path = "../reservoir-sampling"}
+reservoir-sampling = { ^0.3.* }
