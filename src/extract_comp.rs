@@ -253,8 +253,8 @@ mod distributed_fastq_reader
     }
 
     impl<T: BufRead> FASTQReader<T> {
-        pub fn new (args: SampleArgs, mut reader: T) -> FASTQReader<T> {
-            let mut read = FASTQRead::new(match args.trimmed_length {
+        pub fn new (args: SampleArgs, reader: T) -> FASTQReader<T> {
+            let read = FASTQRead::new(match args.trimmed_length {
                 Some(n) => n,
                 None => 0,
             });
