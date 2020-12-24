@@ -153,10 +153,6 @@ impl FASTQRead {
         }
     }
 
-    fn len (&self) -> usize {
-        self.seq.len()
-    }
-
     fn count_n(seq: &str) -> usize {
         seq.matches("N").count()
     }
@@ -264,13 +260,6 @@ mod distributed_fastq_reader
                 reader: reader,
                 sample_args: args,
                 curr_valid_reads: 0,
-            }
-        }
-
-        pub fn get_seq_len (&self) -> usize {
-            match self.sample_args.trimmed_length {
-                Some(n) => n,
-                None => self.curr.len()
             }
         }
     }
