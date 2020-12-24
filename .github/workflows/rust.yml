@@ -11,7 +11,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  check:
     name: Check syntax correctness
     runs-on: ubuntu-latest
     steps:
@@ -43,12 +43,9 @@ jobs:
         with:
           toolchain: stable
       - run: cargo run --example plot-comp
-      
-      - name: Archive plot-comp output
-        uses: actions/upload-artifact@v2
-        with: 
-          name: plot-comp-out
-          path: examples/plot-comp/out.png
+
+      - name: Compare ref outputs to program outputs
+        run: diff examples/plot-comp/out.png examples/plot-comp/out-ref.png 
           
   run-extract-comp:
     name: Test extract-comp
@@ -60,10 +57,8 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+
       - run: cargo run --example extract-comp
-      
-      - name: Archive extract-comp output
-        uses: actions/upload-artifact@v2
-        with: 
-          name: extract-comp-out
-          path: examples/extract-comp/out.json
+
+      - name: Compare ref outputs to program outputs
+        run: examples/extract-comp/out.json examples/extract-comp/out-ref.json
