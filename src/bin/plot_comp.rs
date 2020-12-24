@@ -21,7 +21,7 @@ fn main() {
             None => panic!("Improper path provided"),
         }
     );
-    file_name.push("_comp.png");
+    file_name.push("_plot.png");
 
     out_path.set_file_name (file_name);
 
