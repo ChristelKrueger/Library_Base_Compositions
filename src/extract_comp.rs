@@ -211,16 +211,16 @@ use reservoir_sampling::unweighted::l as sample;
 /// Takes in reader (for FASTQ lines) and SampleArgs, returns JSONified string and
 /// total number of reads processed after applying SampleArgs.
 pub fn run (args: SampleArgs, reader: impl BufRead) -> (String, usize) {
-    // TODO: Convert args.target_read_count to usize or
+    //TODO: Convert args.target_read_count to usize or figure out how to allocate u64-sized vec
     let mut sampled_seqs = vec![String::new(); args.target_read_count as usize];
 
     // Initial read to help figure out line size for pre-optimization of allocs
     let fastq_reader = FASTQReader::new(args, reader);
 
-    // Figure out allotment size based on line size, or provided trim len
-    let mut base_comp = BaseComp::init(fastq_reader.get_seq_len());
+    sample(fastq_reader, sampled_seqs.as_mut_slice());
 
-    sample(fastq_reader.into_iter(), sampled_seqs.as_mut_slice());
+    // Figure out allotment size based on line size, or provided trim len
+    let mut base_comp = BaseComp::init(sampled_seqs[0].len());
 
     for seq in sampled_seqs {
         if seq == "" {
