@@ -5,7 +5,7 @@ on:
     paths: [ examples/**, src/**, Cargo.toml, .github/workflows/** ]
   pull_request:
     branches: [ master ]
-    paths: [ examples/**, src/**, Cargo.toml, .github/workflows ]
+    paths: [ examples/**, src/**, Cargo.toml, .github/workflows/** ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -61,4 +61,4 @@ jobs:
       - run: cargo run --example extract-comp
 
       - name: Compare ref outputs to program outputs
-        run: examples/extract-comp/out.json examples/extract-comp/out-ref.json
+        run: diff examples/extract-comp/out.json examples/extract-comp/out-ref.json

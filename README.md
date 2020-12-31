@@ -1,3 +1,5 @@
+![Build](https://github.com/ChristelKrueger/Library_Base_Compositions/workflows/Rust/badge.svg)
+
 # Library Base Compositions
 Cambiohack project to make a QC tool to check for sequencing library base compositions
 
