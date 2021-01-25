@@ -154,7 +154,7 @@ impl FASTQRead {
     }
 
     fn count_n(seq: &str) -> usize {
-        seq.matches("N").count()
+        seq.matches('N').count()
     }
 
     // Returns true if number is found in seq
