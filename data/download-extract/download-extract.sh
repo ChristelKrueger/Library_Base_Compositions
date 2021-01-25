@@ -7,18 +7,18 @@
 
 while IFS='$\n' read -r line; do
 
-    serial_num=`echo $line | awk '{print $1}'`
-    species=`echo $line | awk '{print $2}'`
-    lib_type=`echo $line | awk '{print $3}'`
-    srr_number=`echo $line | awk '{print $4}'`
-    ftp_url=`echo $line | awk '{print $5}'`
-    title=`echo $line | awk '{print $6}'`
+    serial_num=`echo "$line" | awk -F '\t' '{ print $1 }'`
+    species=`echo "$line" | awk -F '\t' '{ print $2 }'`
+    lib_type=`echo "$line" | awk -F '\t' '{ print $3 }'`
+    srr_number=`echo "$line" | awk -F '\t' '{ print $4 }'`
+    ftp_url=`echo "$line" | awk -F '\t' '{ print $5 }'`
+    title=`echo "$line" | awk -F '\t' '{ print $6 }'`
 
     # Generates filter file for jq to use
     filter_file=$(mktemp)
     # $'\"' is escaped double quote ("). God, why does this need to be explaned? Because bash.
-    echo {metadata: {serial_num:$'\"'$serial_num$'\"', species:$'\"'$species$'\"', lib_type:$'\"'$lib_type$'\"', srr_number:$'\"'$srr_number$'\"', title:$'\"'$title$'\"'}, .} > $filter_file
+    echo {metadata: {serial_num:$'\"'$serial_num$'\"', species:$'\"'$species$'\"', lib_type:$'\"'$lib_type$'\"', srr_number:$'\"'$srr_number$'\"', title:$'\"'$title$'\"'}, data:.} > $filter_file
 
-    wget -q -O - $seq_url | cargo run --bin extract-fastq-comp --stdin --stdout 100000 | \
-    jq -f filter_file > $seq_ref_number"comp.json"
+    wget -q -O - $ftp_url | cargo run --bin extract_comp -- --stdin --stdout 100000 | \
+    jq -f $filter_file > $srr_number"comp.json"
 done
