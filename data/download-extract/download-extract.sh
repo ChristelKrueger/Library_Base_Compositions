@@ -5,6 +5,10 @@
 
 # i.e with a \t (TAB) character between each bit of info
 
+#So script doesn't keep going after error
+set -e
+set -o pipefail
+
 while IFS='$\n' read -r line; do
 
     serial_num=`echo "$line" | awk -F '\t' '{ print $1 }'`
