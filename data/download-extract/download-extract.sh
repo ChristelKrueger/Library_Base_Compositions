@@ -6,8 +6,7 @@
 # i.e with a \t (TAB) character between each bit of info
 
 #So script doesn't keep going after error
-set -e
-set -o pipefail
+set -euo pipefail
 
 while IFS='$\n' read -r line; do
 
