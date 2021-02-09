@@ -1,26 +1,5 @@
 ![Build](https://github.com/ChristelKrueger/Library_Base_Compositions/workflows/Rust/badge.svg)
 
-# Library Base Compositions
-Cambiohack project to make a QC tool to check for sequencing library base compositions
-
-# Install Instructions:
-* Make sure you have `Cargo` installed (can verify using `cargo --version`)
-
-* Make sure latest version of Rust is installed. (run `rustup update`)
-
-* Clone this repository:
-   ```
-   git clone https://github.com/ChristelKrueger/Library_Base_Compositions.git
-   ```
-   
-* Then run:
-   ```
-   cargo build --release
-   ```
-   
-* Your binaries will be in `target/release/`
-
-
 # Problem Statement:
 The base composition of sequencing reads depends on the library type (RNA, genomic, bisulfite, ChIP, etc.) and the species, and can often be characteristic for a particular sequencing application. For a while we’ve been thinking about a quality control tool that checks if a given base composition matches the expected base composition for the application. In other words, does my library look like it is supposed to? Some of the code of my last year’s hackathon project (Charades) could easily be adapted to put a given base composition into the wider context, but what’s missing is a collection of base compositions for a variety of sequencing libraries. The immediate task would be to think about how to best collect library base compositions and match them up with meta data about library type for a variety of published applications.
 
@@ -40,3 +19,23 @@ The base composition of sequencing reads depends on the library type (RNA, genom
 *	[ ] Make nice front end/ability to upload own data
   * Babraham website
   * Online app?
+
+# Library Base Compositions
+Cambiohack project to make a QC tool to check for sequencing library base compositions
+
+# Install Instructions:
+* Make sure you have `Cargo` installed (can verify using `cargo --version`)
+
+* Make sure latest version of Rust is installed. (run `rustup update`)
+
+* Clone this repository:
+   ```
+   git clone https://github.com/ChristelKrueger/Library_Base_Compositions.git
+   ```
+   
+* Then run:
+   ```
+   cargo build --release
+   ```
+   
+* Your binaries will be in `target/release/`
