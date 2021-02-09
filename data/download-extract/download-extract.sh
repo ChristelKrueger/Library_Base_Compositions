@@ -22,6 +22,9 @@ while IFS='$\n' read -r line; do
     # $'\"' is escaped double quote ("). God, why does this need to be explaned? Because bash.
     echo {metadata: {serial_num:$'\"'$serial_num$'\"', species:$'\"'$species$'\"', lib_type:$'\"'$lib_type$'\"', srr_number:$'\"'$srr_number$'\"', title:$'\"'$title$'\"'}, data:.} > $filter_file
 
-    wget -q -O - $ftp_url | gunzip -c | cargo run --bin extract_comp -- --stdin --stdout 100000 | \
+    wget -O $srr_number".fastq.gz" $ftp_url;
+    gunzip $srr_number".fastq.gz";
+
+    ./target/release/extract_comp --stdout 100000 "in.fastq" | \
     jq -f $filter_file > $srr_number"_comp.json"
 done
