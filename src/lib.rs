@@ -140,7 +140,7 @@ impl BaseCompColBases {
 use std::iter::FromIterator;
 impl FromIterator<usize> for BaseCompColBases {
     fn from_iter<I: IntoIterator<Item=usize>>(iter: I) -> Self {
-        let mut c = IterableBaseCompColBases::from(BaseCompColBases {A: 0, G: 0, C:0, T:0, N:0});
+        let mut c = IterableBaseCompColBases::from(BaseCompColBases {A: 0, G: 0, C: 0, T: 0, N: 0});
         let mut iter = iter.into_iter();
 
         for ele in &mut
