@@ -164,6 +164,27 @@ impl FromIterator<usize> for BaseCompColBases {
 #[cfg(test)]
 mod col_base_comp_tests {
     use super::*;
+
+    #[test]
+    fn test_iterability() {
+        // test if conversion TO iterator works
+        let mut read = BaseCompCol::new(0);
+        read.extract(&b'A');
+
+        let mut iter = read.bases.iter();
+        assert_eq!(iter.next().unwrap(), 1);
+        assert_eq!(iter.next().unwrap(), 0);
+
+        // test if converstion FROM iterator works
+        let mut read = BaseCompCol::new(0);
+        read.extract(&b'A');
+
+        let iter = read.bases.iter();
+        let converted_read: BaseCompColBases = iter.collect();
+
+        assert_eq!(converted_read, BaseCompColBases {A: 1, T: 0, G: 0, C: 0, N: 0});
+    }
+
     #[test]
     fn test_extract() {
         let mut read = BaseCompCol::new(0);
