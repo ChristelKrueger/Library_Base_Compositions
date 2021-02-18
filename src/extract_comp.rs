@@ -139,7 +139,7 @@ impl FASTQRead {
         }
 
         // behaviour is meant to panic only when uneven reads cannot be fixed by trimming
-        if len.unwrap_or(usize::MAX) > seq_len && seq_len != self.seq.len() || quals_len != self.quals.len() {
+        if len.unwrap_or(usize::MAX) > seq_len && (seq_len != self.seq.len() || quals_len != self.quals.len()) {
             panic!("Reads have inconsistent lengths. Particularly this read: \n{}\n{}\n \
             Expected read to be: {} length but it was: {} length", self.seq, self.quals, seq_len, self.seq.len());
         }

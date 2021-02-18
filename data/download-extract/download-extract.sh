@@ -26,6 +26,6 @@ while IFS='$\n' read -r line; do
     # $'\"' is escaped double quote ("). God, why does this need to be explaned? Because bash.
     echo {metadata: {serial_num:$'\"'$serial_num$'\"', species:$'\"'$species$'\"', lib_type:$'\"'$lib_type$'\"', srr_number:$'\"'$srr_number$'\"', title:$'\"'$title$'\"'}, data:.} > $filter_file
 
-    python3 ./data/download-extract/sample_srr.py $srr_number 0 10000000 | ./target/release/extract_comp --stdin --stdout 100000 | \
+    python3 ./data/download-extract/sample_srr.py $srr_number 2 1000 | ./target/release/extract_comp --stdin --stdout --trim 50 1000 | \
     jq -f $filter_file > $srr_number"_comp.json"
 done
