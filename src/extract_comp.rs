@@ -29,7 +29,7 @@ mod sample_fastq_tests {
     fn test_check_colorspace() {
         let mut read = FASTQRead::new(6);
         let mut reader = return_reader(b"@\nAT1CGN\n+\n!!!!!!");
-        read.read(&mut reader);
+        read.read(&mut reader, None);
 
         assert!(read.check_colorspace("AT1CGN"))
     }
@@ -38,7 +38,7 @@ mod sample_fastq_tests {
     fn test_count_n() {
         let mut read = FASTQRead::new(6);
         let mut reader = return_reader(b"@\n\n+\n!!!!!!");
-        read.read(&mut reader);
+        read.read(&mut reader, None);
 
         assert_eq!(FASTQRead::count_n("NNANNA"), 4)
     }
@@ -127,7 +127,7 @@ impl FASTQRead {
     /// - *Important*: Panics if read length of strings is not same as strings read before.
     /// - `reader`: Object implementing `std::io::BufRead` from which to read lines
     /// - Returns `None` if EOF reached.
-    fn read (&mut self, reader: &mut impl BufRead) -> Option<()>
+    fn read (&mut self, reader: &mut impl BufRead, len: Option<usize>) -> Option<()>
     {
         let (seq_len, quals_len) = (self.seq.len(), self.quals.len());
         
@@ -138,7 +138,8 @@ impl FASTQRead {
             return result;
         }
 
-        if seq_len != self.seq.len() || quals_len != self.quals.len() {
+        // behaviour is meant to panic only when uneven reads cannot be fixed by trimming
+        if len.unwrap_or(usize::MAX) > seq_len && seq_len != self.seq.len() || quals_len != self.quals.len() {
             panic!("Reads have inconsistent lengths. Particularly this read: \n{}\n{}\n \
             Expected read to be: {} length but it was: {} length", self.seq, self.quals, seq_len, self.seq.len());
         }
@@ -272,9 +273,9 @@ mod distributed_fastq_reader
                 return None
             }
 
-            self.curr.read(&mut self.reader);
+            self.curr.read(&mut self.reader, self.sample_args.trimmed_length);
             while !FASTQRead::check_read(&mut self.curr, &mut self.sample_args) {
-                if let None = self.curr.read(&mut self.reader) {
+                if let None = self.curr.read(&mut self.reader, self.sample_args.trimmed_length) {
                     return None;
                 }
             }
