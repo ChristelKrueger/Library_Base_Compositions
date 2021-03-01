@@ -224,7 +224,7 @@ pub fn run (args: SampleArgs, reader: impl BufRead) -> (String, usize) {
     let mut base_comp = BaseComp::init(sampled_seqs[0].len());
 
     for seq in sampled_seqs {
-        if seq == "" {
+        if seq.is_empty() {
             break;
         }
         base_comp.extract(&seq);
@@ -251,14 +251,11 @@ mod distributed_fastq_reader
 
     impl<T: BufRead> FASTQReader<T> {
         pub fn new (args: SampleArgs, reader: T) -> FASTQReader<T> {
-            let read = FASTQRead::new(match args.trimmed_length {
-                Some(n) => n,
-                None => 0,
-            });
+            let read = FASTQRead::new(args.trimmed_length.unwrap_or(0));
 
             FASTQReader {
                 curr: read,
-                reader: reader,
+                reader,
                 sample_args: args,
                 curr_valid_reads: 0,
             }
@@ -274,8 +271,8 @@ mod distributed_fastq_reader
             }
 
             self.curr.read(&mut self.reader, self.sample_args.trimmed_length);
-            while !FASTQRead::check_read(&mut self.curr, &mut self.sample_args) {
-                if let None = self.curr.read(&mut self.reader, self.sample_args.trimmed_length) {
+            while !FASTQRead::check_read(&mut self.curr, &self.sample_args) {
+                if self.curr.read(&mut self.reader, self.sample_args.trimmed_length).is_none() {
                     return None;
                 }
             }

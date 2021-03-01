@@ -5,7 +5,6 @@ use crate::{
     io_utils
 };
 
-use serde_json;
 use structopt::StructOpt;
 use std::path::PathBuf;
 use plotters::prelude::*;
@@ -72,7 +71,7 @@ where R: BufRead {
 mod data_transforms {
     use super::*;
 
-    pub(crate) fn calc_mean (libs: &Vec<Vec<Read>>, pos: usize) -> Bases {
+    pub(crate) fn calc_mean (libs: &[Vec<Read>], pos: usize) -> Bases {
         libs.iter()
         .map(move |lib| lib[pos].bases)
         .fold( Bases::new(),
@@ -87,7 +86,7 @@ mod data_transforms {
         .collect()
     }
 
-    pub(crate) fn calc_sd (libs: &Vec<Vec<Read>>, mean: Bases, pos: usize) -> Bases {
+    pub(crate) fn calc_sd (libs: &[Vec<Read>], mean: Bases, pos: usize) -> Bases {
         libs.iter()
         .map(move |lib| lib[pos].bases)
         //Get differences from mean

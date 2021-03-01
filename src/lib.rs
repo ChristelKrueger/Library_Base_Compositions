@@ -5,7 +5,7 @@ pub mod test_utils {
     use std::io::Cursor;
     /// Returns reader which implements Read trait.
     /// - `s`: Data which should be yielded by the reader upon read
-    pub fn return_reader<'a> (s: &'a[u8]) -> Cursor<&[u8]> {
+    pub fn return_reader (s: &[u8]) -> Cursor<&[u8]> {
         
         Cursor::new(s)
     }
@@ -59,7 +59,6 @@ pub mod io_utils {
 }
 
 use serde::{Serialize, Deserialize};
-use serde_json;
 
 /// Represents a column of base composition data.
 /// Contains base composition along with position information.
@@ -132,7 +131,7 @@ impl BaseCompColBases {
     }
 
     pub fn percentage (&mut self) {
-        let sum = self.iter().fold(0, |acc, curr| acc + curr) as f64;
+        let sum = self.iter().sum::<usize>() as f64;
         *self = self.iter().map(|base| ((base as f64 / sum)  * 100f64).round() as usize).collect();
     }
 }
@@ -223,7 +222,7 @@ mod col_base_comp_tests {
 
 impl BaseCompCol {
     pub fn new (pos: usize) -> BaseCompCol {
-        BaseCompCol {pos: pos, bases: BaseCompColBases {A: 0, T: 0, G: 0, C: 0, N: 0}}
+        BaseCompCol {pos, bases: BaseCompColBases {A: 0, T: 0, G: 0, C: 0, N: 0}}
     }
 
     pub fn extract (&mut self, s: &u8) {
