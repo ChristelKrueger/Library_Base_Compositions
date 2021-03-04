@@ -24,6 +24,11 @@ The base composition of sequencing reads depends on the library type (RNA, genom
 Cambiohack project to make a QC tool to check for sequencing library base compositions
 
 # Install Instructions:
+
+### Setting up Sample SRR
+* Install `Python 3` 
+
+### Setting up composition extraction
 * Make sure you have `Cargo` installed (can verify using `cargo --version`)
 
 * Make sure latest version of Rust is installed. (run `rustup update`)
@@ -39,3 +44,15 @@ Cambiohack project to make a QC tool to check for sequencing library base compos
    ```
    
 * Your binaries will be in `target/release/`
+
+
+### Setting up Metadata insertion in base composition file
+
+* Install `jq` with `sudo apt install jq`.
+
+### Final command:
+```bash
+# Substitute GDS_LOCATION with output from the perl script.
+
+cat data/$GDS_LOCATION.txt | bash -x data/download-extract/download-extract.sh
+```
