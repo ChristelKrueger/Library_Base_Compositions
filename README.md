@@ -52,7 +52,7 @@ Cambiohack project to make a QC tool to check for sequencing library base compos
 
 ### Final command:
 ```bash
-# Substitute GDS_LOCATION with output from the perl script.
+# Substitute GDS_OUT_LOCATION with output file from the perl script.
 
-cat data/$GDS_LOCATION.txt | bash -x data/download-extract/download-extract.sh
+cat data/$GDS_OUT_LOCATION | bash -x data/download-extract/download-extract.sh
 ```
