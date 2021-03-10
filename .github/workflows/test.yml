@@ -1,11 +1,11 @@
-name: Rust
+name: Build & Test
 
 on:
   push:
-    paths: [ examples/**, src/**, Cargo.toml, .github/workflows/** ]
+    paths: [ examples/**, src/**, Cargo.toml, .github/workflows/test.yml ]
   pull_request:
     branches: [ master ]
-    paths: [ examples/**, src/**, Cargo.toml, .github/workflows/** ]
+    paths: [ examples/**, src/**, Cargo.toml, .github/workflows/test.yml ]
 
 env:
   CARGO_TERM_COLOR: always
