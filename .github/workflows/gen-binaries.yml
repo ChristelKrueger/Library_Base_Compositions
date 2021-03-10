@@ -1,0 +1,44 @@
+name: Generate Binaries
+
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: cargo build --release --verbose
+      
+    - name: Show toolchain
+      run: rustup show
+      
+  Show-Toolchain:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    - run: rustup show
+      
+  Save Binaries:
+  
+    needs: Build
+    runs-on: ubuntu-latest
+  
+    steps:
+    - uses: actions/upload-artifact@v2
+      name: Save extract-comp
+      with:
+        name: extract_comp
+        path: target/release/extract_comp
+      
+    - uses: actions/upload-artifact@v2
+      name: Save extract-comp
+      with:
+        name: plot_comp
+        path: target/release/plot_comp
