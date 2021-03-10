@@ -11,7 +11,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  check:
+  Check:
     name: Check syntax correctness
     runs-on: ubuntu-latest
     steps:
@@ -20,7 +20,7 @@ jobs:
         with:
           toolchain: stable
       - run: cargo check
-  test:
+  Test:
     name: Run unit tests
     needs: check
     runs-on: ubuntu-latest
