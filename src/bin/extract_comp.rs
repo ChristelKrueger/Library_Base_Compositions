@@ -17,8 +17,8 @@ fn main() {
 
     info!("Arguments recieved: {:#?}", args);
 
-    let (result, seqs) = run(args.sample_args, &mut reader);
+    let (result, reads) = run(args.sample_args, &mut reader);
 
     writeln!(writer, "{}", result).expect("Problem printing result");
-    eprintln!("Extracted base composition of {} reads.", seqs);
+    eprintln!("Extracted base composition of {} reads.", reads);
 }

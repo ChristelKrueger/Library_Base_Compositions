@@ -250,8 +250,8 @@ pub(crate) struct BaseComp {
 impl BaseComp {
     pub fn init (len: usize) -> BaseComp {
         let mut base_comp = BaseComp { lib: Vec::with_capacity(len), len};
-        for i in 0..len {
-            base_comp.lib.push(BaseCompCol::new(i + 1));
+        for i in 1..=len {
+            base_comp.lib.push(BaseCompCol::new(i));
         }
 
         base_comp
