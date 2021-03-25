@@ -39,7 +39,7 @@ jobs:
         run: sudo apt-get install
         
       - name: Generate Rust binary
-        run: cargo build --release
+        run: cargo build --release --bin extract_comp
 
       # Runs a set of commands using the runners shell
       - name: Run script
