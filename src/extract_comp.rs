@@ -22,7 +22,7 @@ mod sample_fastq_tests {
             result,
             std::str::from_utf8(b"{\"lib\":[{\"pos\":1,\"bases\":{\"A\":100,\"T\":0,\"G\":0,\"C\":0,\"N\":0}},{\"pos\":2,\"bases\":{\"A\":100,\"T\":0,\"G\":0,\"C\":0,\"N\":0}}],\"len\":2}").unwrap()
         );
-        assert_eq!(seqs, 2);
+        assert_eq!(seqs, 1);
     }
 
     #[test]
