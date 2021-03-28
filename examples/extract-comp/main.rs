@@ -1,5 +1,7 @@
 use fastq2comp::extract_comp::{SampleArgs, run};
 use fastq2comp::io_utils;
+use fastq2comp::extract_comp::FASTQReader;
+
 use std::{path::PathBuf, io::Write};
 use std::fs::File;
 
@@ -14,12 +16,12 @@ fn main() {
         Ok(file) => file,
     };
 
-    let result = run(SampleArgs {
+    let result = run(FASTQReader::new( SampleArgs {
         trimmed_length: Some(50),
         target_read_count: 10,
         min_phred_score: 0,
         n_content: None,
-    }, &mut reader).0;
+    }, &mut reader)).0;
 
     match file.write_all(result.as_bytes()) {
         Err(why) => panic!("couldn't write to output JSON file: {}", why),

@@ -11,12 +11,14 @@ mod sample_fastq_tests {
     #[test]
     fn test_run() {
         let reader = return_reader(b"@\nAAA\n+\n~~~");
-        let (result, seqs) = run(SampleArgs {
+        let args = SampleArgs {
             target_read_count: 1u64,
             min_phred_score: 0,
             n_content: None,
-            trimmed_length: Some(2),
-        }, reader);
+            trimmed_length: Some(2)
+        };
+
+        let (result, seqs) = run( FASTQReader::new(args, reader));
 
         assert_eq!(
             result,
@@ -206,17 +208,15 @@ impl FASTQRead {
     }
 }
 
-use distributed_fastq_reader::FASTQReader;
 use reservoir_sampling::unweighted::l as sample;
 
 /// Takes in reader (for FASTQ lines) and SampleArgs, returns JSONified string and
 /// total number of reads processed after applying SampleArgs.
-pub fn run (args: SampleArgs, reader: impl BufRead) -> (String, u64) {
+pub fn run<T> (fastq_reader: FASTQReader<T>) -> (String, u64)
+where T: BufRead
+{
     //TODO: Convert args.target_read_count to usize or figure out how to allocate u64-sized vec
-    let mut sampled_seqs = vec![String::new(); args.target_read_count as usize];
-
-    // Initial read to help figure out line size for pre-optimization of allocs
-    let fastq_reader = FASTQReader::new(args, reader);
+    let mut sampled_seqs = vec![String::new(); fastq_reader.target_read_count as usize];
 
     // Randomly sample FASTQ reads
     sample(fastq_reader, sampled_seqs.as_mut_slice());
@@ -240,48 +240,47 @@ pub fn run (args: SampleArgs, reader: impl BufRead) -> (String, u64) {
     (base_comp.jsonify(), lines_read)
 }
 
-mod distributed_fastq_reader
-{
-    use std::io::BufRead;
-    use super::{FASTQRead, SampleArgs};
 
-    pub struct FASTQReader<T: BufRead> {
-        curr: FASTQRead,
-        reader: T,
-        sample_args: SampleArgs,
-        curr_valid_reads: u64,
-    }
+pub struct FASTQReader<T: BufRead> {
+    curr: FASTQRead,
+    reader: T,
+    sample_args: SampleArgs,
+    pub curr_valid_reads: u64,
+    pub target_read_count: u64,
+}
 
-    impl<T: BufRead> FASTQReader<T> {
-        pub fn new (args: SampleArgs, reader: T) -> FASTQReader<T> {
-            let read = FASTQRead::new(args.trimmed_length.unwrap_or(0));
+impl<T: BufRead> FASTQReader<T> {
+    pub fn new (args: SampleArgs, reader: T) -> FASTQReader<T> {
+        let read = FASTQRead::new(args.trimmed_length.unwrap_or(0));
+        let target_read_count = args.target_read_count.clone();
 
-            FASTQReader {
-                curr: read,
-                reader,
-                sample_args: args,
-                curr_valid_reads: 0,
-            }
+        FASTQReader {
+            curr: read,
+            reader,
+            sample_args: args,
+            curr_valid_reads: 0,
+            target_read_count,
         }
     }
+}
 
-    impl<T: BufRead> Iterator for FASTQReader<T> {
-        type Item = String;
+impl<T: BufRead> Iterator for FASTQReader<T> {
+    type Item = String;
 
-        fn next (&mut self) -> Option<String> {
-            if self.curr_valid_reads >= self.sample_args.target_read_count {
-                return None
-            }
-
-            self.curr.read(&mut self.reader, self.sample_args.trimmed_length);
-            while !FASTQRead::check_read(&mut self.curr, &self.sample_args) {
-                if self.curr.read(&mut self.reader, self.sample_args.trimmed_length).is_none() {
-                    return None;
-                }
-            }
-            self.curr_valid_reads += 1;
-
-            Some(FASTQRead::trim(&self.curr.seq, self.sample_args.trimmed_length).to_string())
+    fn next (&mut self) -> Option<String> {
+        if self.curr_valid_reads >= self.sample_args.target_read_count {
+            return None
         }
+
+        self.curr.read(&mut self.reader, self.sample_args.trimmed_length);
+        while !FASTQRead::check_read(&mut self.curr, &self.sample_args) {
+            if self.curr.read(&mut self.reader, self.sample_args.trimmed_length).is_none() {
+                return None;
+            }
+        }
+        self.curr_valid_reads += 1;
+
+        Some(FASTQRead::trim(&self.curr.seq, self.sample_args.trimmed_length).to_string())
     }
+
 }
