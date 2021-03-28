@@ -45,17 +45,14 @@ Cambiohack project to make a QC tool to check for sequencing library base compos
    
 * Your binaries will be in `target/release/`
 
-
-### Setting up Metadata insertion in base composition file
-
-* Install `jq` with `sudo apt install jq`.
-
 ### Final command:
 ```bash
-# Substitute GDS_OUT_LOCATION with output file from the perl script.
+# pwd should be root of the project, where this README is stored.
 
+# Substitute GDS_OUT_LOCATION with output file from the perl script.
 bash -x data/download-extract/download-extract.sh < data/$GDS_OUT_LOCATION
 
 # In the case of the sample output, it would be:
 bash -x data/download-extract/download-extract.sh < data/results_example_gds.txt
 ```
+Output will be appended to `output.csv` file.

@@ -20,12 +20,7 @@ while IFS='$\n' read -r line; do
     srr_number=`echo "$line" | awk -F '\t' '{ print $4 }'`
     ftp_url=`echo "$line" | awk -F '\t' '{ print $5 }'`
     title=`echo "$line" | awk -F '\t' '{ print $6 }'`
+    METADATA="$serial_num,$species,$lib_type,$srr_number,$title"
 
-    # Generates filter file for jq to use
-    filter_file=$(mktemp)
-    # $'\"' is escaped double quote ("). God, why does this need to be explaned? Because bash.
-    echo {metadata: {serial_num:$'\"'$serial_num$'\"', species:$'\"'$species$'\"', lib_type:$'\"'$lib_type$'\"', srr_number:$'\"'$srr_number$'\"', title:$'\"'$title$'\"'}, data:.} > $filter_file
-
-    python3 ./data/download-extract/sample_srr.py $srr_number 2 1000 | ./target/release/extract_comp --stdin --stdout --trim 50 1000 | \
-    jq -f $filter_file > $srr_number"_comp.json"
+    echo "$METADATA,$(python3 ./data/download-extract/sample_srr.py $srr_number 2 1000 | ./target/release/extract_comp --stdin --stdout --csv --trim 50 1000)" >> ./data/download-extract/output.csv
 done
