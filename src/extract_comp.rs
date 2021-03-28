@@ -9,7 +9,7 @@ mod sample_fastq_tests {
     use crate::test_utils::*;
 
     #[test]
-    fn test_run() {
+    fn test_json_run() {
         let reader = return_reader(b"@\nAAA\n+\n~~~");
         let args = SampleArgs {
             target_read_count: 1u64,
@@ -18,11 +18,30 @@ mod sample_fastq_tests {
             trimmed_length: Some(2)
         };
 
-        let (result, seqs) = run( FASTQReader::new(args, reader));
+        let (result, seqs) = run_json( FASTQReader::new(args, reader));
 
         assert_eq!(
             result,
             std::str::from_utf8(b"{\"lib\":[{\"pos\":1,\"bases\":{\"A\":100,\"T\":0,\"G\":0,\"C\":0,\"N\":0}},{\"pos\":2,\"bases\":{\"A\":100,\"T\":0,\"G\":0,\"C\":0,\"N\":0}}],\"len\":2}").unwrap()
+        );
+        assert_eq!(seqs, 1);
+    }
+
+    #[test]
+    fn test_csv_run() {
+        let reader = return_reader(b"@\nAAA\n+\n~~~");
+        let args = SampleArgs {
+            target_read_count: 1u64,
+            min_phred_score: 0,
+            n_content: None,
+            trimmed_length: Some(2)
+        };
+
+        let (result, seqs) = run_csv( FASTQReader::new(args, reader));
+
+        assert_eq!(
+            result,
+            std::str::from_utf8(b"100,0,0,0,0,100,0,0,0,0").unwrap()
         );
         assert_eq!(seqs, 1);
     }
@@ -62,6 +81,10 @@ pub struct Cli {
     /// Toggles output to stdout.
     #[structopt(short = "Z", long = "stdout")]
     stdout: bool,
+
+    /// Toggles output in CSV
+    #[structopt(long = "csv")]
+    pub csv: bool,
 
     #[structopt(flatten)]
     pub sample_args: SampleArgs,
@@ -212,7 +235,27 @@ use reservoir_sampling::unweighted::l as sample;
 
 /// Takes in reader (for FASTQ lines) and SampleArgs, returns JSONified string and
 /// total number of reads processed after applying SampleArgs.
-pub fn run<T> (fastq_reader: FASTQReader<T>) -> (String, u64)
+pub fn run_json<T> (fastq_reader: FASTQReader<T>) -> (String, u64)
+where T: BufRead
+{
+    let (mut comp, lines_read) = run_core (fastq_reader);
+
+    (comp.jsonify(), lines_read)
+}
+
+pub fn run_csv<T> (fastq_reader: FASTQReader<T>) -> (String, u64)
+where T: BufRead
+{
+    let (comp, lines_read) = run_core (fastq_reader);
+
+    ({let mut s = comp.lib.into_iter().flat_map(|b| b.bases.iter()).
+        fold(String::new(), |acc, curr| acc + &curr.to_string() + ","); s.pop(); s},
+    lines_read)
+}
+
+/// Takes in reader (for FASTQ lines) and SampleArgs, returns [`BaseComp`] and
+/// total number of reads processed after applying SampleArgs.
+fn run_core<T> (fastq_reader: FASTQReader<T>) -> (BaseComp, u64)
 where T: BufRead
 {
     //TODO: Convert args.target_read_count to usize or figure out how to allocate u64-sized vec
@@ -237,7 +280,7 @@ where T: BufRead
         r.bases.percentage();
     }
 
-    (base_comp.jsonify(), lines_read)
+    (base_comp, lines_read)
 }
 
 

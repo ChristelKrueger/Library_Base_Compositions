@@ -1,4 +1,4 @@
-use fastq2comp::extract_comp::{SampleArgs, run};
+use fastq2comp::extract_comp::{SampleArgs, run_json};
 use fastq2comp::io_utils;
 use fastq2comp::extract_comp::FASTQReader;
 
@@ -16,7 +16,7 @@ fn main() {
         Ok(file) => file,
     };
 
-    let result = run(FASTQReader::new( SampleArgs {
+    let result = run_json(FASTQReader::new( SampleArgs {
         trimmed_length: Some(50),
         target_read_count: 10,
         min_phred_score: 0,
