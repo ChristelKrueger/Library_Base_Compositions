@@ -249,7 +249,10 @@ where T: BufRead
     let (comp, lines_read) = run_core (fastq_reader);
 
     ({let mut s = comp.lib.into_iter().flat_map(|b| b.bases.iter()).
-        fold(String::new(), |acc, curr| acc + &curr.to_string() + ","); s.pop(); s},
+        fold(String::new(), |acc, curr| acc + &curr.to_string() + ",");
+        s.pop(); // remove trailing ',' to make it valid CSV
+        s
+    },
     lines_read)
 }
 
