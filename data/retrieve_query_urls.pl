@@ -2,6 +2,7 @@
 use warnings;
 use strict;
 use FindBin qw($RealBin);
+$|++;
 
 # This script takes in a GDS search result and for each entry it
 # will:
@@ -48,24 +49,23 @@ while (<IN>) {
 				}
 		}
 
-		#next if ($id < 101);
 
 		$annotation{sample_id} = get_first_sample_from_series($annotation{series});
 		
 		next unless ($annotation{sample_id});
-		#warn $annotation{series}, "\n";
+		# warn "The annotation is ", $annotation{series}, "\n";
 
 		($annotation{run_id}, $annotation{species}, $annotation{type}) = get_run_from_sample($annotation{sample_id});
 
 		next unless ($annotation{run_id});
-                #warn $annotation{run_id}, "\n";
+               #  warn "The run id is ", $annotation{run_id}, "\n";
 
-                $annotation{run_srr} = get_srr_from_srx($annotation{run_id});
+                ($annotation{run_srr}, $annotation{url}) = get_srr_from_srx($annotation{run_id});
+
 
                 next unless ($annotation{run_srr});
-                #warn $annotation{run_srr}, "\n";
+                # warn "The run srr is ", $annotation{run_srr}, "\n";
 
-		$annotation{url} = get_url_from_srr($annotation{run_srr});
 
 		next unless ($annotation{url});
 
@@ -133,7 +133,7 @@ sub get_run_from_sample {
 		}
 
 		return ($run_id, $species, $type);
-		warn "No SRX number from $gsm\n";
+		# warn "No SRX number from $gsm\n";
 
 }
 
@@ -141,50 +141,20 @@ sub get_srr_from_srx {
 
 		my ($srx) = @_;
 
-		my $command = "wget -qO- http://www.ebi.ac.uk/ena/data/view/$srx\\&display=xml";
+		my $command =  "wget -qO- https://www.ebi.ac.uk/ena/portal/api/filereport\\?accession=$srx\\&result=read_run\\&fields=run_accession,fastq_ftp,fastq_md5,fastq_bytes";
 
 		my $response = `$command`;
-                #warn $response;
-		
-                if ($response =~ /<ID>(SRR\d+)/) {
-		    chomp $1;
-                    return $1;
-
-		}
                 
-	 
-		warn "No SRR number from $srx\n";
+                #warn "Got the following response:\n>>$response<<\n";
 
-}
+		my($srr, $url) =  (split(/\s+/,$response))[4,5];
 
-
-sub get_url_from_srr {
-
-                my ($srr) = @_;
-		my $command = "wget  -qO- https://www.ebi.ac.uk/ena/portal/api/filereport?accession=$srr\\&result=read_run\\&fields=run_accession,fastq_ftp";
-		my $response = `$command`;
-
-                #warn $response;
-
-		my $url;
-		if ($response =~ /(ftp.sra\S+?fastq.gz)/) {
-				$url = $1;
-
-				#warn "URL is $url\n";
-
-				if ($url =~ /(SRR\d+)_?\d?\.fastq.gz/) {
-					 $srr = $1;
-
-					 #warn "SRR = $1\n";
-
-			        }
-				return $url;
-		}
-
-		warn "No URL from $srr\n";
-	 
+		#warn "The SRR number is $srr\n";
+		#warn "The URL is $url\n";
+		return ($srr, $url);
 
 
 }
+
 
 
