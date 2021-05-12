@@ -1,4 +1,4 @@
-use fastq2comp::extract_comp::{Cli, FASTQReader, run_csv, run_json};
+use fastq2comp::extract_comp::{Cli, FASTQReader, run_tsv, run_json};
 use fastq2comp::io_utils;
 
 use log::info;
@@ -18,7 +18,7 @@ fn main() {
     info!("Arguments recieved: {:#?}", args);
 
     let (result, reads) = 
-        if args.csv {run_csv(FASTQReader::new(args.sample_args, &mut reader))}
+        if args.tsv {run_tsv(FASTQReader::new(args.sample_args, &mut reader))}
         else {run_json(FASTQReader::new(args.sample_args, &mut reader))};
 
     writeln!(writer, "{}", result).expect("Problem printing result");
