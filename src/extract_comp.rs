@@ -251,6 +251,7 @@ where T: BufRead
     ({let mut s = comp.lib.into_iter().flat_map(|b| b.bases.iter()).
         fold(String::new(), |acc, curr| acc + &curr.to_string() + "\t");
         s.pop(); // remove trailing ',' to make it valid tsv
+        s
     },
     lines_read)
 }
