@@ -41,7 +41,7 @@ mod sample_fastq_tests {
 
         assert_eq!(
             result,
-            std::str::from_utf8(b"100,0,0,0,0,100,0,0,0,0").unwrap()
+            std::str::from_utf8(b"100\t0\t0\t0\t0\t100\t0\t0\t0\t0").unwrap()
         );
         assert_eq!(seqs, 1);
     }
