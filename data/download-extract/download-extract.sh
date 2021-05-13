@@ -13,5 +13,5 @@
 set -euo pipefail
 
 while IFS='$\n' read -r line; do
-    echo -e "$METADATA\t$(python3 ./data/download-extract/sample_srr.py $srr_number 2 1000 | ./target/release/extract_comp --stdin --stdout --tsv --trim 50 1000)" >> ./data/download-extract/output.csv
+    echo -e "$line\t$(python3 ./data/download-extract/sample_srr.py $srr_number 2 1000 | ./target/release/extract_comp --stdin --stdout --tsv --trim 50 1000)" >> ./data/download-extract/output.csv
 done
