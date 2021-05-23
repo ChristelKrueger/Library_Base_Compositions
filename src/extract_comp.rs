@@ -28,7 +28,7 @@ mod sample_fastq_tests {
     }
 
     #[test]
-    fn test_csv_run() {
+    fn test_tsv_run() {
         let reader = return_reader(b"@\nAAA\n+\n~~~");
         let args = SampleArgs {
             target_read_count: 1u64,
@@ -37,11 +37,11 @@ mod sample_fastq_tests {
             trimmed_length: Some(2)
         };
 
-        let (result, seqs) = run_csv( FASTQReader::new(args, reader));
+        let (result, seqs) = run_tsv( FASTQReader::new(args, reader));
 
         assert_eq!(
             result,
-            std::str::from_utf8(b"100,0,0,0,0,100,0,0,0,0").unwrap()
+            std::str::from_utf8(b"100\t0\t0\t0\t0\t100\t0\t0\t0\t0").unwrap()
         );
         assert_eq!(seqs, 1);
     }
@@ -82,9 +82,9 @@ pub struct Cli {
     #[structopt(short = "Z", long = "stdout")]
     stdout: bool,
 
-    /// Toggles output in CSV
-    #[structopt(long = "csv")]
-    pub csv: bool,
+    /// Toggles output in tsv
+    #[structopt(long = "tsv")]
+    pub tsv: bool,
 
     #[structopt(flatten)]
     pub sample_args: SampleArgs,
@@ -243,14 +243,14 @@ where T: BufRead
     (comp.jsonify(), lines_read)
 }
 
-pub fn run_csv<T> (fastq_reader: FASTQReader<T>) -> (String, u64)
+pub fn run_tsv<T> (fastq_reader: FASTQReader<T>) -> (String, u64)
 where T: BufRead
 {
     let (comp, lines_read) = run_core (fastq_reader);
 
     ({let mut s = comp.lib.into_iter().flat_map(|b| b.bases.iter()).
-        fold(String::new(), |acc, curr| acc + &curr.to_string() + ",");
-        s.pop(); // remove trailing ',' to make it valid CSV
+        fold(String::new(), |acc, curr| acc + &curr.to_string() + "\t");
+        s.pop(); // remove trailing ',' to make it valid tsv
         s
     },
     lines_read)

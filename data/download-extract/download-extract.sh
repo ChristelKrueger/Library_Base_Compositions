@@ -12,15 +12,24 @@
 # So script doesn't keep going after error
 set -euo pipefail
 
+# Build Rust binaries incase they have not been built
+if [[ ! -f "./target/release/extract_comp" ]]
+then
+    cargo build --release
+fi
+
+# Autopopulate TSV file headers incase it does not exist
+if [[ ! -f "./data/download-extract/output.tsv" ]]
+then
+    echo -ne "serial_num\tspecies\tlib_type\tsrr_number\ttitle\t" >>  ./data/download-extract/output.tsv
+    for i in {1..50}
+    do
+            echo -ne "A$i\tC$i\tG$i\tT$i\tN$i\t" >> ./data/download-extract/output.tsv
+    done
+    echo "" # Blank line
+fi
+
 while IFS='$\n' read -r line; do
-
-    serial_num=`echo "$line" | awk -F '\t' '{ print $1 }'`
-    species=`echo "$line" | awk -F '\t' '{ print $2 }'`
-    lib_type=`echo "$line" | awk -F '\t' '{ print $3 }'`
     srr_number=`echo "$line" | awk -F '\t' '{ print $4 }'`
-    ftp_url=`echo "$line" | awk -F '\t' '{ print $5 }'`
-    title=`echo "$line" | awk -F '\t' '{ print $6 }'`
-    METADATA="$serial_num,$species,$lib_type,$srr_number,$title"
-
-    echo "$METADATA,$(python3 ./data/download-extract/sample_srr.py $srr_number 2 1000 | ./target/release/extract_comp --stdin --stdout --csv --trim 50 1000)" >> ./data/download-extract/output.csv
+    echo -e "$line\t$(python3 ./data/download-extract/sample_srr.py $srr_number 2 100 | ./target/release/extract_comp --stdin --stdout --tsv --trim 50 100)" >> ./data/download-extract/output.tsv
 done
