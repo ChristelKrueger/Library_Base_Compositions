@@ -29,6 +29,15 @@ Cambiohack project to make a QC tool to check for sequencing library base compos
 * Install `Python 3` 
 
 ### Setting up composition extraction
+
+* Install build dependencies, such as:
+```
+apt-get install cmake libfreetype6-dev libfontconfig1-dev pkg-config cmake build-essential
+```
+(Can possbily substitute `build-essential` with `clang`)
+
+* Install Rust using `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+
 * Make sure you have `Cargo` installed (can verify using `cargo --version`)
 
 * Make sure latest version of Rust is installed. (run `rustup update`)
