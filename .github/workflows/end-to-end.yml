@@ -2,45 +2,42 @@ name: End-to-end test
 
 # Controls when the action will run. 
 on:
-  # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    paths: [ src/extract_comp.rs, src/bin/extract_comp.rs, src/lib.rs, Cargo.toml, .github/workflows/end-to-end.yml ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   test:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
-      
-      - name: Setup-Python
-        uses: actions/setup-python@v2.2.1
+      - uses: actions/cache@v2
+        name: Cache Cargo Build Dependencies
         with:
-          # Version range or exact version of a Python version to use, using SemVer's version range syntax.
-          python-version: 3.8 # optional, default is 3.x
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           
-      - name: Setup-Rust
-        uses: actions-rs/toolchain@v1.0.6
-        with:
-          toolchain: stable
+      - name: Update Cargo Dependencies
+        run: cargo update
 
-      # Runs a single command using the runners shell
-      - name: Install-jq
-        run: sudo apt-get install
-        
       - name: Generate Rust binary
         run: cargo build --release --bin extract_comp
 
       # Runs a set of commands using the runners shell
       - name: Run script
         run: bash -x data/download-extract/download-extract.sh < data/results_example_gds.txt
+        
+      # Save output.tsv
+      - uses: actions/upload-artifact@v2
+        name: Save output
+        with:
+          name: output.tsv
+          path: data/download-extract/output.tsv
