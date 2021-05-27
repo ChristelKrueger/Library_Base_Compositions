@@ -15,7 +15,7 @@ set -euo pipefail
 # Build Rust binaries incase they have not been built
 if [[ ! -f "./target/release/extract_comp" ]]
 then
-    cargo build --release
+    cargo build --release --bin extract_comp
 fi
 
 # Autopopulate TSV file headers incase it does not exist
