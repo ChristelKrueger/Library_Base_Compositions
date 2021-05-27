@@ -21,7 +21,7 @@ fi
 # Autopopulate TSV file headers incase it does not exist
 if [[ ! -f "./data/download-extract/output.tsv" ]]
 then
-    echo -ne "serial_num\tspecies\tlib_type\tsrr_number\ttitle\t" >>  ./data/download-extract/output.tsv
+    echo -ne "serial_num\tspecies\tlib_type\tsrr_number\tURL\ttitle\n" >>  ./data/download-extract/output.tsv
     for i in {1..50}
     do
             echo -ne "A$i\tC$i\tG$i\tT$i\tN$i\t" >> ./data/download-extract/output.tsv
