@@ -14,9 +14,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Display Directory Contents
-        run: ls -l
-    
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
       - uses: actions/cache@v2
         name: Cache Cargo Build Dependencies
         with:
