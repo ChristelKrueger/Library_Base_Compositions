@@ -16,9 +16,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+
+      - uses: actions/cache@v2
+        name: Cache Cargo Build Dependencies
         with:
-          toolchain: stable
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - run: cargo check
   Test:
     name: Run unit tests
@@ -27,9 +36,18 @@ jobs:
     
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+
+      - uses: actions/cache@v2
+        name: Cache Cargo Build Dependencies
         with:
-          toolchain: stable
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - run: cargo test
       
   run-plot-comp:
@@ -39,9 +57,18 @@ jobs:
     
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      
+      - uses: actions/cache@v2
+        name: Cache Cargo Build Dependencies
         with:
-          toolchain: stable
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - run: cargo run --example plot-comp
 
       - name: Compare ref outputs to program outputs
@@ -54,9 +81,17 @@ jobs:
     
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      
+      - uses: actions/cache@v2
+        name: Cache Cargo Build Dependencies
         with:
-          toolchain: stable
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - run: cargo run --example extract-comp
 
