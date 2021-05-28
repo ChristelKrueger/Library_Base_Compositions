@@ -3,7 +3,7 @@ name: End-to-end test
 # Controls when the action will run. 
 on:
   push:
-    paths: [ src/extract_comp.rs, src/bin/extract_comp.rs, src/lib.rs, Cargo.toml, .github/workflows/end-to-end.yml ]
+    paths: [ src/extract_comp.rs, src/bin/extract_comp.rs, src/lib.rs, Cargo.toml, data/download-extract/sample_srr.py, data/results_example_gds.txt ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
