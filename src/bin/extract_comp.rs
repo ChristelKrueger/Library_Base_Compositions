@@ -13,7 +13,7 @@ fn main() {
     //Program starts.
 
     let mut writer = io_utils::get_writer(&args.output);
-    let mut reader = io_utils::get_reader(&args.input);
+    let mut reader = io_utils::get_reader(&args.input, args.compressed);
 
     info!("Arguments recieved: {:#?}", args);
 

@@ -9,7 +9,7 @@ use std::fs::File;
 /// and prints it JSON format.
 
 fn main() {
-    let mut reader = io_utils::get_reader(&Some(PathBuf::from("examples/extract-comp/in.fastq")));
+    let mut reader = io_utils::get_reader(&Some(PathBuf::from("examples/extract-comp/in.fastq")), false);
 
     let mut file = match File::create(&PathBuf::from("examples/extract-comp/out.json")) {
         Err(why) => panic!("Couldn't open output JSON file: {}", why),

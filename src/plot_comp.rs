@@ -172,7 +172,7 @@ where
 
     if let Some(libs) = libs {
         let libs: Vec<Vec<Read>> = libs.iter()
-            .map(|x| get_reader(&Some(x.to_path_buf())))
+            .map(|x| get_reader(&Some(x.to_path_buf()), false))
             .map(|mut x| read_comp_file(&mut x).1)
             .collect();
 

@@ -24,19 +24,23 @@ pub mod test_utils {
 pub mod io_utils {
     use std::path::PathBuf;
     use std::fs::OpenOptions;
-    use std::io::{self, BufReader, BufRead, Write};
+    use std::io::{self, BufReader, BufRead, Write, Read};
+    use flate2::read::GzDecoder;
 
     // Reader is a wrapper over BufRead
     // Takes in a PathBuf and open it or if no PathBuf is provided, opens up stdin
     // And provides an interface over the actual reading.
-    pub fn get_reader(input: &Option<PathBuf>) -> Box<dyn BufRead> {
-        match input {
-            Some(file) => Box::new(BufReader::new(OpenOptions::new().read(true).open(&file).expect("Input file does not exist"))),
+    pub fn get_reader(input: &Option<PathBuf>, compressed: bool) -> Box<dyn BufRead> {
+        let mut reader: Box<dyn Read> = match input {
+            Some(file) => Box::new(OpenOptions::new().read(true).open(&file).expect("Input file does not exist")),
             None => {
                 let stdin = io::stdin();
-                Box::new(BufReader::new(stdin))
+                Box::new(stdin)
             },
-        } 
+        };
+
+        if compressed {reader = Box::new(GzDecoder::new(reader))}
+        Box::new(BufReader::new(reader))
     }
 
     use std::io::ErrorKind;

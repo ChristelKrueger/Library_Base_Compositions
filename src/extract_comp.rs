@@ -96,6 +96,10 @@ pub struct Cli {
     /// Output file, use flag -Z to get output to stdout instead
     #[structopt(parse(from_os_str), required_unless("stdout"))]
     pub output: Option<PathBuf>,
+
+    /// Uncompress file using gzip
+    #[structopt(short = "C", long = "gzip")]
+    pub compressed: bool,
 }
 
 #[derive(Debug, StructOpt)]
@@ -262,10 +266,7 @@ fn run_core<T> (fastq_reader: FASTQReader<T>) -> (BaseComp, u64)
 where T: BufRead
 {
     //TODO: Convert args.target_read_count to usize or figure out how to allocate u64-sized vec
-    let mut sampled_seqs = vec![String::new(); fastq_reader.target_read_count as usize];
-
-    // Randomly sample FASTQ reads
-    sample(fastq_reader, sampled_seqs.as_mut_slice());
+    let sampled_seqs = fastq_reader.sample_random();
 
     // Figure out allotment size based on line size, or provided trim len
     let mut base_comp = BaseComp::init(sampled_seqs[0].len());
@@ -307,6 +308,13 @@ impl<T: BufRead> FASTQReader<T> {
             curr_valid_reads: 0,
             target_read_count,
         }
+    }
+    pub fn sample_random (self) -> Vec<String> {
+        let mut sampled_seqs = vec![String::new(); self.target_read_count as usize];
+
+        // Randomly sample FASTQ reads
+        sample(self, sampled_seqs.as_mut_slice());
+        sampled_seqs
     }
 }
 
