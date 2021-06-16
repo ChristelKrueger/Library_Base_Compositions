@@ -1,6 +1,12 @@
 pub mod extract_comp;
 pub mod plot_comp;
 
+/// Extracted as function as it will immediately terminate, allowing no destructors to run.
+/// Therefore, make sure destructors are run before terminating.
+pub fn exit () {
+    std::process::exit(1);
+}
+
 pub mod test_utils {
     use std::io::Cursor;
     /// Returns reader which implements Read trait.
