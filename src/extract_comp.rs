@@ -134,7 +134,7 @@ pub(crate) struct FASTQRead {
     quals: String,
 }
 
-use log::{debug, error};
+use log::debug;
 use crate::exit;
 
 impl FASTQRead {
@@ -206,8 +206,8 @@ impl FASTQRead {
     fn trim(str: &str, len: Option<usize>) -> &str {
         match len {
             Some(n) => {
-                if n <= str.len() {
-                    error!("Read {str} is of length {len}, while minimum is {n}", str=str, len=str.len(), n=n);
+                if n > str.len() {
+                    eprintln!("Read {str} is of length {len}, while minimum is {n}", str=str, len=str.len(), n=n);
                     exit();
                 }
                 &str[0..n]
@@ -222,7 +222,7 @@ impl FASTQRead {
 
         // Check for numbers in reads
         if self.check_colorspace(seq) {
-            error!("Found numbers in reads - this is probably colorspace");
+            eprintln!("Found numbers in reads - this is probably colorspace");
             exit();
         }
 
