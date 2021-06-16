@@ -32,6 +32,7 @@ fi
 TMPFILE=$(mktemp)
 while IFS='$\n' read -r line; do
     srr_number=`echo "$line" | awk -F '\t' '{ print $4 }'`
-    echo -e "$line\t$(python3 ./data/download-extract/sample_srr.py $srr_number 2 100000 | ./target/release/extract_comp --stdin --stdout --tsv --trim 50 100000)" > $TMPFILE
-    cat $TMPFILE >> ./data/download-extract/output.tsv
+
+    output="$(python3 ./data/download-extract/sample_srr.py $srr_number 2 100000 | ./target/release/extract_comp --stdin --stdout --tsv --trim 50 100000)"
+    echo -e "$line\t$output" >> ./data/download-extract/output.tsv
 done
