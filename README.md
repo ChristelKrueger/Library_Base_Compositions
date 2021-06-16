@@ -60,9 +60,9 @@ apt-get install cmake libfreetype6-dev libfontconfig1-dev pkg-config cmake build
 # pwd should be root of the project, where this README is stored.
 
 # Substitute GDS_OUT_LOCATION with output file from the perl script.
-bash -x data/download-extract/download-extract.sh < data/$GDS_OUT_LOCATION
+bash data/download-extract/download-extract.sh < data/$GDS_OUT_LOCATION
 
 # In the case of the sample output, it would be:
-bash -x data/download-extract/download-extract.sh < data/results_example_gds.txt
+bash data/download-extract/download-extract.sh < data/results_example_gds.txt
 ```
 Output will be appended to `output.csv` file.

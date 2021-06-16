@@ -36,7 +36,7 @@ jobs:
 
       # Runs a set of commands using the runners shell
       - name: Run script
-        run: bash -x data/download-extract/download-extract.sh < data/results_example_gds.txt
+        run: bash data/download-extract/download-extract.sh < data/results_example_gds.txt
         
       # Save output.tsv
       - uses: actions/upload-artifact@v2
