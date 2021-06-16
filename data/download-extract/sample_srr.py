@@ -46,10 +46,13 @@ def collect_gzip_data(skip,collect):
         lines = new_data.split("\n")
 
         for i in range(len(lines)):
-            if newline_count >= 4*skip:
-                print(lines[i],end='')
-                if i < len(lines)-1:
-                    print("\n",end='')
+            try: 
+                if newline_count >= 4*skip:
+                    print(lines[i],end='')
+                    if i < len(lines)-1:
+                        print("\n",end='')
+            except BrokenPipeError:
+                print('Output pipe broken.')
 
             if i < len(lines)-1:
                 newline_count += 1
