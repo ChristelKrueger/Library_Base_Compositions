@@ -33,6 +33,6 @@ TMPFILE=$(mktemp)
 while IFS='$\n' read -r line; do
     srr_number=`echo "$line" | awk -F '\t' '{ print $4 }'`
 
-    output="$(python3 ./data/download-extract/sample_srr.py $srr_number 2 100 | ./target/release/extract_comp --stdin --stdout --tsv --trim 50 100)"
+    output="$(python3 ./data/download-extract/sample_srr.py $srr_number 2 100 | ./target/release/extract_comp --stdin --stdout --tsv --trim 50 100)" || echo "ERROR encountered on $srr_number"
     echo -e "$line\t$output" >> ./data/download-extract/output.tsv
 done
