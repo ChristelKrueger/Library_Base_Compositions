@@ -283,7 +283,6 @@ pub struct FASTQReader<T: BufRead> {
     curr: FASTQRead,
     reader: T,
     sample_args: SampleArgs,
-    pub curr_valid_reads: u64,
     pub target_read_count: u64,
 }
 
@@ -296,7 +295,6 @@ impl<T: BufRead> FASTQReader<T> {
             curr: read,
             reader,
             sample_args: args,
-            curr_valid_reads: 0,
             target_read_count,
         }
     }
@@ -313,17 +311,12 @@ impl<T: BufRead> Iterator for FASTQReader<T> {
     type Item = String;
 
     fn next (&mut self) -> Option<String> {
-        if self.curr_valid_reads >= self.sample_args.target_read_count {
-            return None
-        }
-
         loop {
             if self.curr.read_fastq(&mut self.reader).is_none() {
                 return None;
             }
             if FASTQRead::check_read(&mut self.curr, &self.sample_args) {break}
         }
-        self.curr_valid_reads += 1;
 
         Some(FASTQRead::trim(&self.curr.seq, self.sample_args.trimmed_length).unwrap().to_string())
     }
