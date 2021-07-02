@@ -203,22 +203,29 @@ impl FASTQRead {
         qual_sum / quals.len()
     }
 
-    fn trim(str: &str, len: Option<usize>) -> &str {
+    /// Returns trimmed string.
+    /// - In case len = None, returns string unchanged
+    /// - In case len > str len, returns Err
+
+    fn trim(str: &str, len: Option<usize>) -> Result<&str, ()> {
         match len {
             Some(n) => {
                 if n > str.len() {
                     eprintln!("Read {str} is of length {len}, while minimum is {n}", str=str, len=str.len(), n=n);
-                    exit();
+                    return Err(());
                 }
-                &str[0..n]
+                Ok(&str[0..n])
             },
-            None => &str[0..],
+            None => Ok(&str[0..]),
         }
     }
 
     fn check_read(&mut self, args: &SampleArgs) -> bool {
         let seq = FASTQRead::trim(&self.seq, args.trimmed_length);
         let quals = FASTQRead::trim(&self.seq, args.trimmed_length);
+
+        let seq = if seq.is_err() {return false;} else {seq.unwrap()};
+        let quals = if quals.is_err() {return false;} else {quals.unwrap()};
 
         // Check for numbers in reads
         if self.check_colorspace(seq) {
@@ -342,7 +349,7 @@ impl<T: BufRead> Iterator for FASTQReader<T> {
         }
         self.curr_valid_reads += 1;
 
-        Some(FASTQRead::trim(&self.curr.seq, self.sample_args.trimmed_length).to_string())
+        Some(FASTQRead::trim(&self.curr.seq, self.sample_args.trimmed_length).unwrap().to_string())
     }
 
 }
