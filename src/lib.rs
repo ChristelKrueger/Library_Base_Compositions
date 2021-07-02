@@ -80,6 +80,7 @@ pub(crate) struct BaseCompCol {
 }
 
 /// Represents a column of base composition.
+/// Used to represent raw state and percentage state as well.
 #[derive(Serialize, Deserialize, PartialEq, Debug, Copy, Clone)]
 #[allow(non_snake_case)]
 pub(crate) struct BaseCompColBases {
@@ -141,8 +142,8 @@ impl BaseCompColBases {
     }
 
     pub fn percentage (&mut self) {
-        let sum = self.iter().sum::<usize>() as f64;
-        *self = self.iter().map(|base| ((base as f64 / sum)  * 100f64).round() as usize).collect();
+        let sum = self.iter().sum::<usize>();
+        *self = self.iter().map(|base| (base * 100) / sum).collect();
     }
 }
 
