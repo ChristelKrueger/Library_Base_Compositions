@@ -1,16 +1,12 @@
 use fastq2comp::plot_comp::{Cli, run};
 use fastq2comp::io_utils;
 
-use simple_logger::SimpleLogger;
 use structopt::StructOpt;
 use std::ffi::OsString;
 use std::path::PathBuf;
 use plotters::prelude::BitMapBackend;
 
 fn main() {
-    //Set up logger.
-    SimpleLogger::new().init().unwrap();
-
     let args = Cli::from_args();
 
     // Output file logic

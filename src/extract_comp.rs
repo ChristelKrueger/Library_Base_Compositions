@@ -134,7 +134,6 @@ pub(crate) struct FASTQRead {
     quals: String,
 }
 
-use log::debug;
 use crate::exit;
 
 impl FASTQRead {
@@ -147,7 +146,7 @@ impl FASTQRead {
         for s in [&mut self.seq, &mut self.quals].iter_mut() {
             **s = match reader.lines().nth(1) {
                 Some(n) => n.expect("Error reading line. Make sure UTF-8 input is supported"),
-                None => {debug!("Input reading finished"); return None},
+                None => {eprintln!("Input reading finished"); return None},
             }
         }
 
@@ -213,13 +212,13 @@ impl FASTQRead {
         // Count the N's
         if let Some(n) = args.n_content {
             if FASTQRead::count_n(seq) > n {
-                debug!("N count of current line ({}) too high - skipping", FASTQRead::count_n(seq));
+                eprintln!("N count of current line ({}) too high - skipping", FASTQRead::count_n(seq));
                 return false;
             }
         }
 
         if FASTQRead::get_average_quality(quals) < args.min_phred_score {
-            debug!("Quality too low - skipping");
+            eprintln!("Quality too low - skipping");
             return false;
         }
 
