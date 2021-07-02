@@ -21,10 +21,10 @@ fn main() {
         target_read_count: 10,
         min_phred_score: 0,
         n_content: None,
-    }, &mut reader)).0;
+    }, &mut reader));
 
-    match file.write_all(result.as_bytes()) {
+    match file.write_all(result.0.as_bytes()) {
         Err(why) => panic!("couldn't write to output JSON file: {}", why),
-        Ok(_) => println!("successfully wrote to output JSON file"),
+        Ok(_) => println!("successfully wrote to output JSON file, read {} reads", result.1),
     }
 }
