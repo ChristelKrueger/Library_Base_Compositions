@@ -50,7 +50,7 @@ mod sample_fastq_tests {
     fn test_check_colorspace() {
         let mut read = FASTQRead::new(6);
         let mut reader = return_reader(b"@\nAT1CGN\n+\n!!!!!!");
-        read.read(&mut reader, None);
+        read.read_fastq(&mut reader);
 
         assert!(read.check_colorspace("AT1CGN"))
     }
@@ -59,7 +59,7 @@ mod sample_fastq_tests {
     fn test_count_n() {
         let mut read = FASTQRead::new(6);
         let mut reader = return_reader(b"@\n\n+\n!!!!!!");
-        read.read(&mut reader, None);
+        read.read_fastq(&mut reader);
 
         assert_eq!(FASTQRead::count_n("NNANNA"), 4)
     }
@@ -154,30 +154,6 @@ impl FASTQRead {
         Some(())
     }
 
-    /// Reads a complete FASTQ statement (composed of 4 lines) into itself.
-    /// - *Important*: Panics if read length of strings is not same as strings read before.
-    /// - `reader`: Object implementing `std::io::BufRead` from which to read lines
-    /// - Returns `None` if EOF reached.
-    fn read (&mut self, reader: &mut impl BufRead, len: Option<usize>) -> Option<()>
-    {
-        let (seq_len, quals_len) = (self.seq.len(), self.quals.len());
-        
-        let result = self.read_fastq(reader);
-
-        // If there have been no reads, then perform first read without checking for lengths
-        if seq_len == 0 || quals_len == 0 {
-            return result;
-        }
-
-        // behaviour is meant to panic only when uneven reads cannot be fixed by trimming
-        if len.unwrap_or(usize::MAX) > seq_len && (seq_len != self.seq.len() || quals_len != self.quals.len()) {
-            panic!("Reads have inconsistent lengths. Particularly this read: \n{}\n{}\n \
-            Expected read to be: {} length but it was: {} length", self.seq, self.quals, seq_len, self.seq.len());
-        }
-
-        result
-    }
-
     fn new (len: usize) -> FASTQRead {
         FASTQRead {
             seq: String::with_capacity(len),
@@ -211,7 +187,6 @@ impl FASTQRead {
         match len {
             Some(n) => {
                 if n > str.len() {
-                    eprintln!("Read {str} is of length {len}, while minimum is {n}", str=str, len=str.len(), n=n);
                     return Err(());
                 }
                 Ok(&str[0..n])
@@ -224,12 +199,14 @@ impl FASTQRead {
         let seq = FASTQRead::trim(&self.seq, args.trimmed_length);
         let quals = FASTQRead::trim(&self.seq, args.trimmed_length);
 
-        let seq = if seq.is_err() {return false;} else {seq.unwrap()};
-        let quals = if quals.is_err() {return false;} else {quals.unwrap()};
+        let (seq, quals) = if seq.is_err() || quals.is_err() {
+            eprintln!("Read is too short, shorter than trim length.\n{:?}", (seq, quals));
+            return false;
+        } else {(seq.unwrap(), quals.unwrap())};
 
         // Check for numbers in reads
         if self.check_colorspace(seq) {
-            eprintln!("Found numbers in reads - this is probably colorspace");
+            eprintln!("Found numbers in reads - this is probably colorspace\n{:?}", (seq, quals));
             exit();
         }
 
@@ -341,11 +318,11 @@ impl<T: BufRead> Iterator for FASTQReader<T> {
             return None
         }
 
-        self.curr.read(&mut self.reader, self.sample_args.trimmed_length);
-        while !FASTQRead::check_read(&mut self.curr, &self.sample_args) {
-            if self.curr.read(&mut self.reader, self.sample_args.trimmed_length).is_none() {
+        loop {
+            if self.curr.read_fastq(&mut self.reader).is_none() {
                 return None;
             }
+            if FASTQRead::check_read(&mut self.curr, &self.sample_args) {break}
         }
         self.curr_valid_reads += 1;
 
