@@ -10,11 +10,7 @@ use std::fs::File;
 
 fn main() {
     let mut reader = io_utils::get_reader(&Some(PathBuf::from("examples/extract-comp/in.fastq")), false);
-
-    let mut file = match File::create(&PathBuf::from("examples/extract-comp/out.json")) {
-        Err(why) => panic!("Couldn't open output JSON file: {}", why),
-        Ok(file) => file,
-    };
+    let mut compressed_reader = io_utils::get_reader(&Some(PathBuf::from("examples/extract-comp/cin.fastq.gz")), true);
 
     let result = run_json(FASTQReader::new( SampleArgs {
         trimmed_length: Some(50),
@@ -22,6 +18,20 @@ fn main() {
         min_phred_score: 0,
         n_content: None,
     }, &mut reader));
+
+    let compressed_result = run_json(FASTQReader::new( SampleArgs {
+        trimmed_length: Some(50),
+        target_read_count: 10,
+        min_phred_score: 0,
+        n_content: None,
+    }, &mut compressed_reader));
+
+    assert_eq!(result, compressed_result);
+
+    let mut file = match File::create(&PathBuf::from("examples/extract-comp/out.json")) {
+        Err(why) => panic!("Couldn't open output JSON file: {}", why),
+        Ok(file) => file,
+    };
 
     match file.write_all(result.0.as_bytes()) {
         Err(why) => panic!("couldn't write to output JSON file: {}", why),

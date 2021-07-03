@@ -4,9 +4,85 @@ use std::io::BufRead;
 use crate::BaseComp;
 
 #[cfg(test)]
-mod sample_fastq_tests {
+mod test_check_read {
     use super::*;
     use crate::test_utils::*;
+
+    #[test]
+    fn test_check_colorspace() {
+        let mut read = FASTQRead::new(6);
+        let mut reader = return_reader(b"@\nAT1CGN\n+\n!!!!!!");
+        read.read_fastq(&mut reader);
+
+        assert!(read.check_colorspace("AT1CGN"))
+    }
+
+    #[test]
+    fn test_count_n() {
+        assert_eq!(FASTQRead::count_n("NNANNA"), 4)
+    }
+
+    #[test]
+    fn test_get_average_quality() {
+        assert_eq!(FASTQRead::get_average_quality("#{|}"), 68)
+    }
+
+    #[test]
+    fn test_check_read () {
+        let mut reader = return_reader(
+br"@
+AAAAANNNNN
++
+!!!!!!!!!!");
+        let mut f = FASTQRead::new(5);
+        f.read_fastq(&mut reader);
+
+        // case where read is trimmed
+        let args = SampleArgs {
+            target_read_count: 1,
+            min_phred_score: 0,
+            n_content: None,
+            trimmed_length: Some(5)
+        };
+
+        assert_eq!(f.check_read(&args), true);
+
+        // case where read is too short for trim length
+        let args = SampleArgs {
+            target_read_count: 1,
+            min_phred_score: 0,
+            n_content: None,
+            trimmed_length: Some(15)
+        };
+
+        assert_eq!(f.check_read(&args), false);
+
+        // case where too many N's
+        let args = SampleArgs {
+            target_read_count: 1,
+            min_phred_score: 0,
+            n_content: Some(1),
+            trimmed_length: None
+        };
+
+        assert_eq!(f.check_read(&args), false);
+
+        // case where quality too low
+        let args = SampleArgs {
+            target_read_count: 1,
+            min_phred_score: 50,
+            n_content: Some(1),
+            trimmed_length: None
+        };
+
+        assert_eq!(f.check_read(&args), false);
+    }
+}
+
+#[cfg(test)]
+mod test_runs {
+    use super::*;
+    use crate::{BaseCompColBases, test_utils::*};
 
     #[test]
     fn test_json_run() {
@@ -47,26 +123,97 @@ mod sample_fastq_tests {
     }
 
     #[test]
-    fn test_check_colorspace() {
-        let mut read = FASTQRead::new(6);
-        let mut reader = return_reader(b"@\nAT1CGN\n+\n!!!!!!");
-        read.read_fastq(&mut reader);
+    fn test_run () {
+        let reader = return_reader(
+br"@
+AACAA
++
+*****
+@
+AAGGA
++
+!!!!!
+@
+AACAA
++
+*****
+@
+TAGGA
++
+*****
+@
+TACAA
++
+*****
+@
+TAGGA
++
+*****
+@
+TACAA
++
+*****
+@
+CCCCC
++
+*****
+@
+NNNNN
++
+*****");
 
-        assert!(read.check_colorspace("AT1CGN"))
+        let args = SampleArgs {
+            target_read_count: 8,
+            min_phred_score: 1,
+            n_content: Some(1),
+            trimmed_length: Some(4)
+        };
+
+        let (res, num) = run_core(FASTQReader::new(args, reader));
+        assert_eq!(num, 7);
+        assert_eq!(res.lib[0].bases, BaseCompColBases {A: 28, T: 57, G: 0, C: 14, N: 0});
     }
+}
+
+#[cfg(test)]
+mod test_fastqreader {
+    use super::*;
+    use crate::test_utils::*;
 
     #[test]
-    fn test_count_n() {
-        let mut read = FASTQRead::new(6);
-        let mut reader = return_reader(b"@\n\n+\n!!!!!!");
-        read.read_fastq(&mut reader);
+    fn test_skipping () {
+        // cases of:
+        // read too short
+        // too many N
+        // too low quality
+        // correct read
+        let reader = return_reader(
+br"@
+ACGT
++
+IIII
+@
+ACNNN
++
+IIIII
+@
+ACGTN
++
+!!!!!
+@
+ACGTN
++
+IIIII
+");
 
-        assert_eq!(FASTQRead::count_n("NNANNA"), 4)
-    }
-
-    #[test]
-    fn test_get_average_quality() {
-        assert_eq!(FASTQRead::get_average_quality("#{|}"), 68)
+        let mut freader = FASTQReader::new(SampleArgs {
+            target_read_count: 2,
+            min_phred_score: 1,
+            n_content: Some(2),
+            trimmed_length: Some(5)
+        }, reader);
+        
+        assert_eq!(freader.next(), Some("ACGTN".to_string()));
     }
 }
 
@@ -196,10 +343,10 @@ impl FASTQRead {
 
     fn check_read(&mut self, args: &SampleArgs) -> bool {
         let seq = FASTQRead::trim(&self.seq, args.trimmed_length);
-        let quals = FASTQRead::trim(&self.seq, args.trimmed_length);
+        let quals = FASTQRead::trim(&self.quals, args.trimmed_length);
 
         let (seq, quals) = if seq.is_err() || quals.is_err() {
-            eprintln!("Read is too short, shorter than trim length.\n{:?}", (seq, quals));
+            eprintln!("Read is too short, shorter than trim length.");
             return false;
         } else {(seq.unwrap(), quals.unwrap())};
 
