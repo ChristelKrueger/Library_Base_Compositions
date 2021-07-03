@@ -296,7 +296,7 @@ impl FASTQRead {
         let quals = FASTQRead::trim(&self.seq, args.trimmed_length);
 
         let (seq, quals) = if seq.is_err() || quals.is_err() {
-            eprintln!("Read is too short, shorter than trim length.\n{:?}", (seq, quals));
+            eprintln!("Read is too short, shorter than trim length.");
             return false;
         } else {(seq.unwrap(), quals.unwrap())};
 
