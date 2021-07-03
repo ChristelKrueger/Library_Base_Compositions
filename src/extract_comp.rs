@@ -82,7 +82,7 @@ AAAAANNNNN
 #[cfg(test)]
 mod test_runs {
     use super::*;
-    use crate::test_utils::*;
+    use crate::{BaseCompColBases, test_utils::*};
 
     #[test]
     fn test_json_run() {
@@ -122,7 +122,57 @@ mod test_runs {
         assert_eq!(seqs, 1);
     }
 
- 
+    #[test]
+    fn test_run () {
+        let reader = return_reader(
+br"@
+AACAA
++
+*****
+@
+AAGGA
++
+!!!!!
+@
+AACAA
++
+*****
+@
+TAGGA
++
+*****
+@
+TACAA
++
+*****
+@
+TAGGA
++
+*****
+@
+TACAA
++
+*****
+@
+CCCCC
++
+*****
+@
+NNNNN
++
+*****");
+
+        let args = SampleArgs {
+            target_read_count: 8,
+            min_phred_score: 1,
+            n_content: Some(1),
+            trimmed_length: Some(4)
+        };
+
+        let (res, num) = run_core(FASTQReader::new(args, reader));
+        assert_eq!(num, 7);
+        assert_eq!(res.lib[0].bases, BaseCompColBases {A: 28, T: 57, G: 0, C: 14, N: 0});
+    }
 }
 
 #[cfg(test)]
@@ -293,7 +343,7 @@ impl FASTQRead {
 
     fn check_read(&mut self, args: &SampleArgs) -> bool {
         let seq = FASTQRead::trim(&self.seq, args.trimmed_length);
-        let quals = FASTQRead::trim(&self.seq, args.trimmed_length);
+        let quals = FASTQRead::trim(&self.quals, args.trimmed_length);
 
         let (seq, quals) = if seq.is_err() || quals.is_err() {
             eprintln!("Read is too short, shorter than trim length.");
