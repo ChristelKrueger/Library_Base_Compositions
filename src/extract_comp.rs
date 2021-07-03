@@ -9,6 +9,15 @@ mod test_check_read {
     use crate::test_utils::*;
 
     #[test]
+    fn test_check_colorspace() {
+        let mut read = FASTQRead::new(6);
+        let mut reader = return_reader(b"@\nAT1CGN\n+\n!!!!!!");
+        read.read_fastq(&mut reader);
+
+        assert!(read.check_colorspace("AT1CGN"))
+    }
+
+    #[test]
     fn test_count_n() {
         assert_eq!(FASTQRead::count_n("NNANNA"), 4)
     }
@@ -113,14 +122,7 @@ mod test_runs {
         assert_eq!(seqs, 1);
     }
 
-    #[test]
-    fn test_check_colorspace() {
-        let mut read = FASTQRead::new(6);
-        let mut reader = return_reader(b"@\nAT1CGN\n+\n!!!!!!");
-        read.read_fastq(&mut reader);
-
-        assert!(read.check_colorspace("AT1CGN"))
-    }
+ 
 }
 
 #[cfg(test)]
