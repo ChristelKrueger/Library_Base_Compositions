@@ -10,7 +10,7 @@
 # i.e with a \t (TAB) character between each bit of info
 
 # So script doesn't keep going after error
-set -euxo pipefail
+set -uxo pipefail
 
 # Build Rust binaries incase they have not been built
 if [[ ! -f "./target/release/extract_comp" ]]
@@ -29,10 +29,9 @@ then
     echo "" # Blank line
 fi
 
-TMPFILE=$(mktemp)
 while IFS='$\n' read -r line; do
     srr_number=`echo "$line" | awk -F '\t' '{ print $4 }'`
 
-    output="$(python3 ./data/download-extract/sample_srr.py $srr_number 2 100 | cargo run --bin --release extract_comp -- --stdin --stdout --tsv --trim 50 100)" || echo "ERROR encountered on $srr_number"
+    output="$(python3 ./data/download-extract/sample_srr.py $srr_number 2 100 | cargo run --bin --release extract_comp -- --stdin --stdout --tsv --trim 50 100)" && \
     echo -e "$line\t$output" >> ./data/download-extract/output.tsv
 done
