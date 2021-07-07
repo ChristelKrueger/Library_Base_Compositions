@@ -10,8 +10,6 @@ fn main() {
     let mut writer = io_utils::get_writer(&args.output);
     let mut reader = io_utils::get_reader(&args.input, args.compressed);
 
-    eprintln!("Arguments recieved: {:#?}", args);
-
     let (result, reads) = 
         if args.tsv {run_tsv(FASTQReader::new(args.sample_args, &mut reader))}
         else {run_json(FASTQReader::new(args.sample_args, &mut reader))};
