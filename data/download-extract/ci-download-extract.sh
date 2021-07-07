@@ -21,17 +21,17 @@ fi
 # Autopopulate TSV file headers incase it does not exist
 if [[ ! -f "./data/download-extract/output.tsv" ]]
 then
-    echo -ne "serial_num\tspecies\tlib_type\tsrr_number\tURL\ttitle\n" >>  ./data/download-extract/output.tsv
+    echo -ne "serial_num\tspecies\tlib_type\tsrr_number\tURL\ttitle\t" >>  ./data/download-extract/output.tsv
     for i in {1..50}
     do
             echo -ne "A$i\tC$i\tG$i\tT$i\tN$i\t" >> ./data/download-extract/output.tsv
     done
-    echo "" # Blank line
+    echo "" >> ./data/download-extract/output.tsv # Blank line
 fi
 
 while IFS='$\n' read -r line; do
     srr_number=`echo "$line" | awk -F '\t' '{ print $4 }'`
 
-    output="$(python3 ./data/download-extract/sample_srr.py $srr_number 2 100 | cargo run --bin --release extract_comp -- --stdin --stdout --tsv --trim 50 100)" && \
+    output="$(python3 ./data/download-extract/sample_srr.py $srr_number 2 100 | cargo run --release --bin extract_comp -- --stdin --stdout --tsv --trim 50 100)" && \
     echo -e "$line\t$output" >> ./data/download-extract/output.tsv
 done
