@@ -17,7 +17,7 @@ The base composition of sequencing reads depends on the library type (RNA, genom
 *	[X] Extract base compositions per base
 *	[X] Plot compositions
 * [X] Sampling reads randomly instead of top _n_ reads
-*	[ ] Make nice front end/ability to upload own data
+* [X] Make nice front end/ability to upload own data ([web app](github.com/DesmondWillowbrook/Web_Library_Base_Compositions))
   * Babraham website
   * Online app?
 
