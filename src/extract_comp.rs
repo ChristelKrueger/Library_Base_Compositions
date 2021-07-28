@@ -219,37 +219,6 @@ IIIII
 
 use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
-#[structopt(name = "extract FASTQ base composition", about = "Extracts base composition of FASTQ file and returns result in JSON.")]
-pub struct Cli {
-    /// Toggles stdin input.
-    #[structopt(short = "I", long = "stdin")]
-    stdin: bool,
-
-    /// Toggles output to stdout.
-    #[structopt(short = "Z", long = "stdout")]
-    stdout: bool,
-
-    /// Toggles output in tsv
-    #[structopt(long = "tsv")]
-    pub tsv: bool,
-
-    #[structopt(flatten)]
-    pub sample_args: SampleArgs,
-
-    /// Input file, use flag -I to get output to stdout instead
-    #[structopt(parse(from_os_str), required_unless("stdin"))]
-    pub input: Option<PathBuf>,
-
-    /// Output file, use flag -Z to get output to stdout instead
-    #[structopt(parse(from_os_str), required_unless("stdout"))]
-    pub output: Option<PathBuf>,
-
-    /// Uncompress file using gzip
-    #[structopt(short = "C", long = "gzip")]
-    pub compressed: bool,
-}
-
-#[derive(Debug, StructOpt)]
 pub struct SampleArgs {
     /// Target sample count
     #[structopt()]
