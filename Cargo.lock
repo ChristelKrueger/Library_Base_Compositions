@@ -344,8 +344,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fcd999463524c52659517fe2cea98493cfe485d10565e7b0fb07dbba7ad2753"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "wasi",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -718,11 +720,13 @@ checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
 
 [[package]]
 name = "reservoir-sampling"
-version = "0.3.1"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09ae97164005cd70c087378a9c47a47449e3bb68b8098aefd1c8e9801e608df7"
+checksum = "a527dbc0169051c57190487c3acd22671ab84d165213abc44066297ce6a1de6e"
 dependencies = [
+ "getrandom",
  "rand",
+ "wasm-bindgen",
 ]
 
 [[package]]
