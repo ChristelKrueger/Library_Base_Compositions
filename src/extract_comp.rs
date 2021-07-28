@@ -1,6 +1,4 @@
-use std::path::PathBuf;
 use std::io::BufRead;
-
 use crate::BaseComp;
 
 #[cfg(test)]
@@ -94,13 +92,12 @@ mod test_runs {
             trimmed_length: Some(2)
         };
 
-        let (result, seqs) = run_json( FASTQReader::new(args, reader));
+        let result = run_json( FASTQReader::new(args, reader));
 
         assert_eq!(
             result,
-            std::str::from_utf8(b"{\"lib\":[{\"pos\":1,\"bases\":{\"A\":100,\"T\":0,\"G\":0,\"C\":0,\"N\":0}},{\"pos\":2,\"bases\":{\"A\":100,\"T\":0,\"G\":0,\"C\":0,\"N\":0}}],\"len\":2}").unwrap()
+            std::str::from_utf8(b"{\"lib\":[{\"pos\":1,\"bases\":{\"A\":100,\"T\":0,\"G\":0,\"C\":0,\"N\":0}},{\"pos\":2,\"bases\":{\"A\":100,\"T\":0,\"G\":0,\"C\":0,\"N\":0}}],\"reads_read\":1}").unwrap()
         );
-        assert_eq!(seqs, 1);
     }
 
     #[test]
@@ -169,8 +166,8 @@ NNNNN
             trimmed_length: Some(4)
         };
 
-        let (res, num) = run_core(FASTQReader::new(args, reader));
-        assert_eq!(num, 7);
+        let res = run(FASTQReader::new(args, reader));
+        assert_eq!(res.reads_read(), 7);
         assert_eq!(res.lib[0].bases, BaseCompColBases {A: 28, T: 57, G: 0, C: 14, N: 0});
     }
 }
@@ -310,6 +307,13 @@ impl FASTQRead {
         }
     }
 
+    /** Checks read according to parameters given in SampleArgs,
+    return `true` if read should be included in calculation of Base Compositions,
+    return `false` if not.
+    
+    Eg.
+    Read "N" and SampleArgs.n_content: Some(1) will return false. 
+    */
     fn check_read(&mut self, args: &SampleArgs) -> bool {
         let seq = FASTQRead::trim(&self.seq, args.trimmed_length);
         let quals = FASTQRead::trim(&self.quals, args.trimmed_length);
@@ -341,20 +345,56 @@ impl FASTQRead {
 
 use reservoir_sampling::unweighted::l as sample;
 
-/// Takes in reader (for FASTQ lines) and SampleArgs, returns JSONified string and
-/// total number of reads processed after applying SampleArgs.
-pub fn run_json<T> (fastq_reader: FASTQReader<T>) -> (String, u64)
+/** Takes in reader (for FASTQ lines) and SampleArgs,
+returns JSONified string which includes number of reads read along with base composition.
+
+Example output (example has whitespace to make it readable, output will not have that):
+```json
+{
+    lib: [
+        {
+            pos: 1,
+            bases: {
+                "A":100
+                "T":0
+                "G":0,
+                "C":0,
+                "N":0
+            }
+        }
+    ],
+    reads_read: 1
+}
+```
+Note: Reads read counts _number_ of reads read,
+while pos represents the _column_ of reads whose percentage is being displayed.
+*/ 
+pub fn run_json<T> (fastq_reader: FASTQReader<T>) -> String
 where T: BufRead
 {
-    let (mut comp, lines_read) = run_core (fastq_reader);
+    let comp = run (fastq_reader);
 
-    (comp.jsonify(), lines_read)
+    serde_json::to_string(&comp).expect("Error converting base compositions to JSON")
 }
 
+/**
+Takes in reader (for FASTQ lines) and SampleArgs,
+returns tuple of a string (the actual base compositions) and number of reads read.
+Column data is collated together, and the order in a column: `A C G T N`.
+So the data looks like:
+```not_rust
+Output for 1 read with two columns.
+(
+    "100\t0\t0\t0\t0\t100\t0\t0\t0\t0",
+    1
+)
+```
+*/
 pub fn run_tsv<T> (fastq_reader: FASTQReader<T>) -> (String, u64)
 where T: BufRead
 {
-    let (comp, lines_read) = run_core (fastq_reader);
+    let comp = run (fastq_reader);
+    let lines_read = comp.reads_read;
 
     ({let mut s = comp.lib.into_iter().flat_map(|b| b.bases.iter()).
         fold(String::new(), |acc, curr| acc + &curr.to_string() + "\t");
@@ -364,9 +404,15 @@ where T: BufRead
     lines_read)
 }
 
-/// Takes in reader (for FASTQ lines) and SampleArgs, returns [`BaseComp`] and
-/// total number of reads processed after applying SampleArgs.
-fn run_core<T> (fastq_reader: FASTQReader<T>) -> (BaseComp, u64)
+use serde::{Deserialize, Serialize};
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Output {
+    processed_num: u64,
+    out: BaseComp,
+}
+
+/// Takes in reader (for FASTQ lines) and SampleArgs, returns [`BaseComp`]
+pub fn run<T> (fastq_reader: FASTQReader<T>) -> BaseComp
 where T: BufRead
 {
     //TODO: Convert args.target_read_count to usize or figure out how to allocate u64-sized vec
@@ -375,20 +421,18 @@ where T: BufRead
     // Figure out allotment size based on line size, or provided trim len
     let mut base_comp = BaseComp::init(sampled_seqs[0].len());
 
-    let mut lines_read = 0u64;
     for seq in sampled_seqs {
         if seq.is_empty() {
             break;
         }
         base_comp.extract(&seq);
-        lines_read += 1;
     }
 
     for r in base_comp.lib.iter_mut() {
         r.bases.percentage();
     }
 
-    (base_comp, lines_read)
+    base_comp
 }
 
 

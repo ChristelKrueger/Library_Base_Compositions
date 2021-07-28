@@ -65,7 +65,7 @@ where R: BufRead {
     let mut comp: LibReads = serde_json::from_str(&s).expect("Error converting JSON to data");
     comp.lib.sort_by(|a, b| a.pos.cmp(&b.pos));
 
-    (comp.len, comp.lib)
+    (comp.lib.len(), comp.lib)
 }
 
 mod data_transforms {

@@ -43,10 +43,9 @@ fn main() {
     let mut writer = io_utils::get_writer(&args.output);
     let mut reader = io_utils::get_reader(&args.input, args.compressed);
 
-    let (result, reads) = 
-        if args.tsv {run_tsv(FASTQReader::new(args.sample_args, &mut reader))}
+    let result = 
+        if args.tsv {run_tsv(FASTQReader::new(args.sample_args, &mut reader)).0}
         else {run_json(FASTQReader::new(args.sample_args, &mut reader))};
 
     writeln!(writer, "{}", result).expect("Problem printing result");
-    eprintln!("Extracted base composition of {} reads.", reads);
 }

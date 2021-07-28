@@ -33,8 +33,8 @@ fn main() {
         Ok(file) => file,
     };
 
-    match file.write_all(result.0.as_bytes()) {
+    match file.write_all(result.as_bytes()) {
         Err(why) => panic!("couldn't write to output JSON file: {}", why),
-        Ok(_) => println!("successfully wrote to output JSON file, read {} reads", result.1),
+        Ok(_) => println!("successfully wrote to output JSON file, read {} reads", result),
     }
 }

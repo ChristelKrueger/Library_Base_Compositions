@@ -74,7 +74,7 @@ use serde::{Serialize, Deserialize};
 /// Contains base composition along with position information.
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[allow(non_snake_case)]
-pub(crate) struct BaseCompCol {
+pub struct BaseCompCol {
     pub pos: usize,
     pub bases: BaseCompColBases,
 }
@@ -83,7 +83,7 @@ pub(crate) struct BaseCompCol {
 /// Used to represent raw state and percentage state as well.
 #[derive(Serialize, Deserialize, PartialEq, Debug, Copy, Clone)]
 #[allow(non_snake_case)]
-pub(crate) struct BaseCompColBases {
+pub struct BaseCompColBases {
     pub A: usize,
     pub T: usize,
     pub G: usize,
@@ -251,21 +251,26 @@ impl BaseCompCol {
 }
 
 /// Represents the entire base composition.
-/// As a Vec of Reads, each of which hold data for a single column
+/// As a Vec of `BaseCompCol`(umns), each of which hold data for a single column.
+/// Also holds data on how many reads were read to produce the compositions.
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct BaseComp {
-    pub lib: Vec<BaseCompCol>,
-    len: usize,
+pub struct BaseComp {
+    lib: Vec<BaseCompCol>,
+    reads_read: u64,
 }
 
 impl BaseComp {
     pub fn init (len: usize) -> BaseComp {
-        let mut base_comp = BaseComp { lib: Vec::with_capacity(len), len};
+        let mut base_comp = BaseComp { lib: Vec::with_capacity(len), reads_read: 0};
         for i in 1..=len {
             base_comp.lib.push(BaseCompCol::new(i));
         }
 
         base_comp
+    }
+
+    pub fn reads_read (&self) -> u64 {
+        self.reads_read
     }
 
     pub fn len (&self) -> usize {
@@ -276,10 +281,6 @@ impl BaseComp {
         for c in s.as_bytes().iter().enumerate() {
             self.lib[c.0].extract(c.1);
         }
-    }
-
-    pub fn jsonify (&mut self) -> String {
-        self.len = BaseComp::len(&self);
-        serde_json::to_string(&self).expect("Error encountered JSONifying data")
+        self.reads_read += 1;
     }
 }
