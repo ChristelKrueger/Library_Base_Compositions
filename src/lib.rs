@@ -255,7 +255,7 @@ impl BaseCompCol {
 /// Also holds data on how many reads were read to produce the compositions.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BaseComp {
-    lib: Vec<BaseCompCol>,
+    pub lib: Vec<BaseCompCol>,
     reads_read: u64,
 }
 
