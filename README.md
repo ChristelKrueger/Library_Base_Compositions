@@ -17,7 +17,7 @@ The base composition of sequencing reads depends on the library type (RNA, genom
 *	[X] Extract base compositions per base
 *	[X] Plot compositions
 * [X] Sampling reads randomly instead of top _n_ reads
-* [X] Make nice front end/ability to upload own data ([web app](github.com/DesmondWillowbrook/Web_Library_Base_Compositions))
+* [X] Make nice front end/ability to upload own data (Further development taking place in [Librarian](https://github.com/DesmondWillowbrook/Librarian-Server))
   * Babraham website
   * Online app?
 
@@ -35,7 +35,7 @@ Cambiohack project to make a QC tool to check for sequencing library base compos
 ```
 apt-get install cmake libfreetype6-dev libfontconfig1-dev pkg-config cmake build-essential
 ```
-(Can possbily substitute `build-essential` with `clang`)
+(Can possibly substitute `build-essential` with `clang`)
 
 * Install Rust using `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
 
