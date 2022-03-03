@@ -43,7 +43,7 @@ AAAAANNNNN
             trimmed_length: Some(5)
         };
 
-        assert_eq!(f.check_read(&args), true);
+        assert!(f.check_read(&args));
 
         // case where read is too short for trim length
         let args = SampleArgs {
@@ -53,7 +53,7 @@ AAAAANNNNN
             trimmed_length: Some(15)
         };
 
-        assert_eq!(f.check_read(&args), false);
+        assert!(f.check_read(&args));
 
         // case where too many N's
         let args = SampleArgs {
@@ -63,7 +63,7 @@ AAAAANNNNN
             trimmed_length: None
         };
 
-        assert_eq!(f.check_read(&args), false);
+        assert!(!f.check_read(&args));
 
         // case where quality too low
         let args = SampleArgs {
@@ -73,7 +73,7 @@ AAAAANNNNN
             trimmed_length: None
         };
 
-        assert_eq!(f.check_read(&args), false);
+        assert!(f.check_read(&args));
     }
 }
 
@@ -215,7 +215,7 @@ IIIII
 }
 
 use structopt::StructOpt;
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone, Copy)]
 pub struct SampleArgs {
     /// Target sample count
     #[structopt()]
@@ -318,9 +318,10 @@ impl FASTQRead {
         let seq = FASTQRead::trim(&self.seq, args.trimmed_length);
         let quals = FASTQRead::trim(&self.quals, args.trimmed_length);
 
-        let (seq, quals) = if seq.is_err() || quals.is_err() {
-            return false;
-        } else {(seq.unwrap(), quals.unwrap())};
+        let (seq, quals) = match (seq, quals) {
+            (Ok(s), Ok(q)) => (s, q),
+            _ => return false,
+        };
 
         // Check for numbers in reads
         if self.check_colorspace(seq) {
@@ -446,7 +447,7 @@ pub struct FASTQReader<T: BufRead> {
 impl<T: BufRead> FASTQReader<T> {
     pub fn new (args: SampleArgs, reader: T) -> FASTQReader<T> {
         let read = FASTQRead::new(args.trimmed_length.unwrap_or(0));
-        let target_read_count = args.target_read_count.clone();
+        let target_read_count = args.target_read_count;
 
         FASTQReader {
             curr: read,
@@ -469,9 +470,7 @@ impl<T: BufRead> Iterator for FASTQReader<T> {
 
     fn next (&mut self) -> Option<String> {
         loop {
-            if self.curr.read_fastq(&mut self.reader).is_none() {
-                return None;
-            }
+            self.curr.read_fastq(&mut self.reader)?;
             if FASTQRead::check_read(&mut self.curr, &self.sample_args) {break}
         }
 

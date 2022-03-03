@@ -147,6 +147,12 @@ impl BaseCompColBases {
     }
 }
 
+impl Default for BaseCompColBases {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 use std::iter::FromIterator;
 impl FromIterator<usize> for BaseCompColBases {
     fn from_iter<I: IntoIterator<Item=usize>>(iter: I) -> Self {
@@ -275,6 +281,10 @@ impl BaseComp {
 
     pub fn len (&self) -> usize {
         self.lib.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     pub fn extract (&mut self, s: &str) {
