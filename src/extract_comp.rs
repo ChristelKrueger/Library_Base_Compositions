@@ -53,7 +53,7 @@ AAAAANNNNN
             trimmed_length: Some(15)
         };
 
-        assert!(f.check_read(&args));
+        assert!(!f.check_read(&args));
 
         // case where too many N's
         let args = SampleArgs {
@@ -73,7 +73,7 @@ AAAAANNNNN
             trimmed_length: None
         };
 
-        assert!(f.check_read(&args));
+        assert!(!f.check_read(&args));
     }
 }
 
