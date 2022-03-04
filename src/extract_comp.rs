@@ -40,7 +40,7 @@ AAAAANNNNN
             target_read_count: 1,
             min_phred_score: 0,
             n_content: None,
-            trimmed_length: Some(5)
+            trimmed_length: 5
         };
 
         assert!(f.check_read(&args));
@@ -50,7 +50,7 @@ AAAAANNNNN
             target_read_count: 1,
             min_phred_score: 0,
             n_content: None,
-            trimmed_length: Some(15)
+            trimmed_length: 15
         };
 
         assert!(!f.check_read(&args));
@@ -60,7 +60,7 @@ AAAAANNNNN
             target_read_count: 1,
             min_phred_score: 0,
             n_content: Some(1),
-            trimmed_length: None
+            trimmed_length: 0
         };
 
         assert!(!f.check_read(&args));
@@ -70,7 +70,7 @@ AAAAANNNNN
             target_read_count: 1,
             min_phred_score: 50,
             n_content: Some(1),
-            trimmed_length: None
+            trimmed_length: 0
         };
 
         assert!(!f.check_read(&args));
@@ -89,7 +89,7 @@ mod test_runs {
             target_read_count: 1u64,
             min_phred_score: 0,
             n_content: None,
-            trimmed_length: Some(2)
+            trimmed_length: 2
         };
 
         let result = run_json( FASTQReader::new(args, reader));
@@ -107,7 +107,7 @@ mod test_runs {
             target_read_count: 1u64,
             min_phred_score: 0,
             n_content: None,
-            trimmed_length: Some(2)
+            trimmed_length: 2
         };
 
         let (result, seqs) = run_tsv( FASTQReader::new(args, reader));
@@ -163,7 +163,7 @@ NNNNN
             target_read_count: 8,
             min_phred_score: 1,
             n_content: Some(1),
-            trimmed_length: Some(4)
+            trimmed_length: 4
         };
 
         let res = run(FASTQReader::new(args, reader));
@@ -207,7 +207,7 @@ IIIII
             target_read_count: 2,
             min_phred_score: 1,
             n_content: Some(2),
-            trimmed_length: Some(5)
+            trimmed_length: 5
         }, reader);
         
         assert_eq!(freader.next(), Some("ACGTN".to_string()));
@@ -227,9 +227,9 @@ pub struct SampleArgs {
     /// Sets maximum amount of N's allowed in sample reads.
     #[structopt(short = "n", long = "n-content")]
     pub n_content: Option<usize>,
-    /// Trims each sampled read to given length.
-    #[structopt(short = "t", long = "trim")]
-    pub trimmed_length: Option<usize>,
+    /// Trims each sampled read to given length. Set to 0 for no trimming.
+    #[structopt(short = "t", long = "trim", default_value="50")]
+    pub trimmed_length: usize,
 }
 
 use regex::Regex;
@@ -295,15 +295,15 @@ impl FASTQRead {
     /// - In case len = None, returns string unchanged
     /// - In case len > str len, returns Err
 
-    fn trim(str: &str, len: Option<usize>) -> Result<&str, ()> {
+    fn trim(str: &str, len: usize) -> Result<&str, ()> {
         match len {
-            Some(n) => {
+            n if n != 0 => {
                 if n > str.len() {
                     return Err(());
                 }
                 Ok(&str[0..n])
             },
-            None => Ok(&str[0..]),
+            _ => Ok(&str[0..]),
         }
     }
 
@@ -446,7 +446,7 @@ pub struct FASTQReader<T: BufRead> {
 
 impl<T: BufRead> FASTQReader<T> {
     pub fn new (args: SampleArgs, reader: T) -> FASTQReader<T> {
-        let read = FASTQRead::new(args.trimmed_length.unwrap_or(0));
+        let read = FASTQRead::new(args.trimmed_length);
         let target_read_count = args.target_read_count;
 
         FASTQReader {

@@ -13,14 +13,14 @@ fn main() {
     let mut compressed_reader = io_utils::get_reader(&Some(PathBuf::from("examples/extract-comp/cin.fastq.gz")), true);
 
     let result = run_json(FASTQReader::new( SampleArgs {
-        trimmed_length: Some(50),
+        trimmed_length: 50,
         target_read_count: 10,
         min_phred_score: 0,
         n_content: None,
     }, &mut reader));
 
     let compressed_result = run_json(FASTQReader::new( SampleArgs {
-        trimmed_length: Some(50),
+        trimmed_length: 50,
         target_read_count: 10,
         min_phred_score: 0,
         n_content: None,
