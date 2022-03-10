@@ -35,6 +35,6 @@ fn main() {
 
     match file.write_all(result.as_bytes()) {
         Err(why) => panic!("couldn't write to output JSON file: {}", why),
-        Ok(_) => println!("successfully wrote to output JSON file, read {} reads", result),
+        Ok(_) => println!("successfully wrote to output JSON file, read {}", result),
     }
 }
