@@ -1,5 +1,5 @@
 pub mod extract_comp;
-pub mod plot_comp;
+
 
 /// Extracted as function as it will immediately terminate, allowing no destructors to run.
 /// Therefore, make sure destructors are run before terminating.
