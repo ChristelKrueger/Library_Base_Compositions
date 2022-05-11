@@ -232,6 +232,12 @@ pub struct SampleArgs {
     pub trimmed_length: usize,
 }
 
+impl Default for SampleArgs {
+    fn default() -> Self {
+        SampleArgs { target_read_count: 100000, min_phred_score: 0, n_content: None, trimmed_length: 50 }
+    }
+}
+
 use regex::Regex;
 
 use lazy_static::lazy_static;
