@@ -218,7 +218,7 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt, Clone, Copy)]
 pub struct SampleArgs {
     /// Target sample count
-    #[structopt()]
+    #[structopt(default_value="100000")]
     pub target_read_count: u64,
 
     /// Sets minimum average quality allowed in sampled reads.
