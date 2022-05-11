@@ -214,21 +214,15 @@ IIIII
     }
 }
 
-use structopt::StructOpt;
-#[derive(Debug, StructOpt, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct SampleArgs {
     /// Target sample count
-    #[structopt(default_value="100000")]
     pub target_read_count: u64,
-
     /// Sets minimum average quality allowed in sampled reads.
-    #[structopt(short = "m", long = "min", default_value="0")]
     pub min_phred_score: usize,
     /// Sets maximum amount of N's allowed in sample reads.
-    #[structopt(short = "n", long = "n-content")]
     pub n_content: Option<usize>,
     /// Trims each sampled read to given length. Set to 0 for no trimming.
-    #[structopt(short = "t", long = "trim", default_value="50")]
     pub trimmed_length: usize,
 }
 
