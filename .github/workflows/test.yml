@@ -49,30 +49,6 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - run: cargo test
-      
-  run-plot-comp:
-    name: Test plot-comp
-    needs: test
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v2
-      
-      - uses: actions/cache@v2
-        name: Cache Cargo Build Dependencies
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - run: cargo run --example plot-comp
-
-      - name: Compare ref outputs to program outputs
-        run: diff examples/plot-comp/out.png examples/plot-comp/out-ref.png 
           
   run-extract-comp:
     name: Test extract-comp
