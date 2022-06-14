@@ -220,7 +220,7 @@ pub struct SampleArgs {
     pub target_read_count: u64,
     /// Sets minimum average quality allowed in sampled reads.
     pub min_phred_score: usize,
-    /// Sets maximum amount of N's allowed in sample reads.
+    /// Sets maximum amount of N's allowed in sample reads. Set to none for no truncation.
     pub n_content: Option<usize>,
     /// Trims each sampled read to given length. Set to 0 for no trimming.
     pub trimmed_length: usize,
