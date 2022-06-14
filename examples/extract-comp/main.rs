@@ -9,24 +9,11 @@ use std::fs::File;
 /// and prints it JSON format.
 
 fn main() {
-    let mut reader = io_utils::get_reader(&Some(PathBuf::from("examples/extract-comp/in.fastq")), false);
-    let mut compressed_reader = io_utils::get_reader(&Some(PathBuf::from("examples/extract-comp/cin.fastq.gz")), true);
+    let path = "examples/extract-comp/in.fastq";
+    let f = File::open(path).unwrap();
+    let mut reader = io_utils::compressed_reader(f, false);
 
-    let result = run_json(FASTQReader::new( SampleArgs {
-        trimmed_length: 50,
-        target_read_count: 10,
-        min_phred_score: 0,
-        n_content: None,
-    }, &mut reader));
-
-    let compressed_result = run_json(FASTQReader::new( SampleArgs {
-        trimmed_length: 50,
-        target_read_count: 10,
-        min_phred_score: 0,
-        n_content: None,
-    }, &mut compressed_reader));
-
-    assert_eq!(result, compressed_result);
+    let result = run_json(FASTQReader::new(SampleArgs::default(), &mut reader));
 
     let mut file = match File::create(&PathBuf::from("examples/extract-comp/out.json")) {
         Err(why) => panic!("Couldn't open output JSON file: {}", why),

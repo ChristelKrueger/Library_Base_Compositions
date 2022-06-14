@@ -36,17 +36,10 @@ pub mod io_utils {
     // Reader is a wrapper over BufRead
     // Takes in a PathBuf and open it or if no PathBuf is provided, opens up stdin
     // And provides an interface over the actual reading.
-    pub fn get_reader(input: &Option<PathBuf>, compressed: bool) -> Box<dyn BufRead> {
-        let mut reader: Box<dyn Read> = match input {
-            Some(file) => Box::new(OpenOptions::new().read(true).open(&file).expect("Input file does not exist")),
-            None => {
-                let stdin = io::stdin();
-                Box::new(stdin)
-            },
-        };
-
-        if compressed {reader = Box::new(GzDecoder::new(reader))}
-        Box::new(BufReader::new(reader))
+    pub fn compressed_reader<T: Read + 'static>(reader: T, compressed: bool) -> Box<dyn BufRead> {
+        Box::new(BufReader::new(
+            if compressed {Box::new(GzDecoder::new(reader))} else {Box::new(reader) as Box<dyn Read>}
+        ))
     }
 
     use std::io::ErrorKind;
