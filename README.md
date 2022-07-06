@@ -1,5 +1,8 @@
 [![Build & Test Rust](https://github.com/ChristelKrueger/Library_Base_Compositions/actions/workflows/test.yml/badge.svg)](https://github.com/ChristelKrueger/Library_Base_Compositions/actions/workflows/test.yml)
 
+# Please note:
+This repository is no longer active and its content has been integrated into https://github.com/DesmondWillowbrook/Librarian
+
 # Problem Statement:
 The base composition of sequencing reads depends on the library type (RNA, genomic, bisulfite, ChIP, etc.) and the species, and can often be characteristic for a particular sequencing application. For a while we’ve been thinking about a quality control tool that checks if a given base composition matches the expected base composition for the application. In other words, does my library look like it is supposed to? Some of the code of my last year’s hackathon project (Charades) could easily be adapted to put a given base composition into the wider context, but what’s missing is a collection of base compositions for a variety of sequencing libraries. The immediate task would be to think about how to best collect library base compositions and match them up with meta data about library type for a variety of published applications.
 
